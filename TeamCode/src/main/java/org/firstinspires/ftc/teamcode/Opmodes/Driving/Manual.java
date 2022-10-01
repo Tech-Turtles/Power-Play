@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Utility.*;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Statemachine.Executive;
-//import org.firstinspires.ftc.teamcode.Utility.Autonomous.TrajectoryRR;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.TrajectoryRR;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
 
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Statemachine.Executive.StateMachine.StateType.*;
@@ -27,7 +27,7 @@ public class Manual extends RobotHardware {
     public static int direction = 1;
 
     private final Executive.StateMachine<Manual> stateMachine;
-//    private TrajectoryRR trajectoryRR;
+    private TrajectoryRR trajectoryRR;
 
     private Pose2d saveLocation = new Pose2d();
 
@@ -52,7 +52,7 @@ public class Manual extends RobotHardware {
         stateMachine.init();
         headingController.setInputBounds(-Math.PI, Math.PI);
         mecanumDrive = new SampleMecanumDrive(hardwareMap, this);
-//        trajectoryRR = new TrajectoryRR(this.mecanumDrive);
+        trajectoryRR = new TrajectoryRR(this.mecanumDrive);
     }
 
     @Override
