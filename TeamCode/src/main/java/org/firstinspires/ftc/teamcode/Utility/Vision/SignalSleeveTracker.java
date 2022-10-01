@@ -22,24 +22,29 @@ public class SignalSleeveTracker extends OpenCvPipeline {
         YELLOW
     }
 
+    Signal color = Signal.NONE;
 
     public Scalar greenLower = new Scalar(32, 10, 75);
     public Scalar greenUpper = new Scalar(86, 255,255);
 
-    public Scalar blueLower = new Scalar(92, 48, 130);
-    public Scalar blueUpper = new Scalar(143, 255, 255);
+    public Scalar blueLower = new Scalar(80, 140, 75);
+    public Scalar blueUpper = new Scalar(133, 255, 190);
 
     public Scalar yellowLower = new Scalar(17, 100, 100);
     public Scalar yellowUpper = new Scalar(40, 255, 255);
 
-    private Mat hsvMat = new Mat();
-    private Mat binaryMat      = new Mat();
-    private Mat maskedInputMat = new Mat();
+    private final Scalar CONTOUR_COLOR = new Scalar(255,0,255);
+    private final Scalar HORIZON_COLOR = new Scalar(0,255,0);
+    private final Scalar TEXT_COLOR = new Scalar(0,200,0);
 
-    private ArrayList<MatOfPoint> contours = new ArrayList<>();
-    private ArrayList<Rect> possibleSignals = new ArrayList<>();
+    public double horizon = 130;
 
-    private Signal color;
+    private final Mat hsvMat = new Mat();
+    private final Mat binaryMat = new Mat();
+    private final Mat maskedInputMat = new Mat();
+
+    private final ArrayList<MatOfPoint> contours = new ArrayList<>();
+    private final ArrayList<Rect> possibleSignals = new ArrayList<>();
 
     @Override
     public Mat processFrame(Mat input) {
@@ -69,31 +74,44 @@ public class SignalSleeveTracker extends OpenCvPipeline {
 
         if(possibleSignals.get(0).area() > possibleSignals.get(1).area() && possibleSignals.get(0).area() > possibleSignals.get(2).area()) {
             color = Signal.GREEN;
-            Imgproc.rectangle(input, possibleSignals.get(0), new Scalar(255,0,255));
-            Imgproc.putText(input, "Green", new Point(possibleSignals.get(0).x, possibleSignals.get(0).y < 10 ? (possibleSignals.get(0).y+possibleSignals.get(0).height+20) : (possibleSignals.get(0).y - 8)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, new Scalar(255,255,255), 1);
+            Imgproc.rectangle(input, possibleSignals.get(0), CONTOUR_COLOR);
+            Imgproc.putText(input, "Green", new Point(possibleSignals.get(0).x, wrapText(0)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else if(possibleSignals.get(1).area() > possibleSignals.get(2).area()) {
             color = Signal.YELLOW;
-            Imgproc.rectangle(input, possibleSignals.get(1), new Scalar(255,0,255));
-            Imgproc.putText(input, "Yellow", new Point(possibleSignals.get(1).x, possibleSignals.get(1).y < 10 ? (possibleSignals.get(1).y+possibleSignals.get(1).height+20) : (possibleSignals.get(1).y - 8)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, new Scalar(255,255,255), 1);
+            Imgproc.rectangle(input, possibleSignals.get(1), CONTOUR_COLOR);
+            Imgproc.putText(input, "Yellow", new Point(possibleSignals.get(1).x, wrapText(1)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else if(possibleSignals.get(2).area() > 1) {
             color = Signal.BLUE;
-            Imgproc.rectangle(input, possibleSignals.get(2), new Scalar(255,0,255));
-            Imgproc.putText(input, "Blue", new Point(possibleSignals.get(2).x, possibleSignals.get(2).y < 10 ? (possibleSignals.get(2).y+possibleSignals.get(2).height+20) : (possibleSignals.get(2).y - 8)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, new Scalar(255,255,255), 1);
+            Imgproc.rectangle(input, possibleSignals.get(2), CONTOUR_COLOR);
+            Imgproc.putText(input, "Blue", new Point(possibleSignals.get(2).x, wrapText(2)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else
             color = Signal.NONE;
 
         binaryMat.release();
+        hsvMat.release();
+        maskedInputMat.release();
+
+        Imgproc.line(input, new Point(0,horizon), new Point(640, horizon), HORIZON_COLOR);
 
         return input;
     }
 
-    public void drawContour(ArrayList<MatOfPoint> contours) {
-        if(!contours.isEmpty()) {
-            MatOfPoint biggestContour = Collections.max(contours, Comparator.comparingDouble(t0 -> Imgproc.boundingRect(t0).width));
-            Rect rect = Imgproc.boundingRect(biggestContour).clone();
-            possibleSignals.add(rect);
-        } else
-            possibleSignals.add(new Rect(0,0,0,0));
+    private void drawContour(ArrayList<MatOfPoint> contours) {
+        // Order contours in descending order by width
+        contours.sort(Collections.reverseOrder(Comparator.comparingDouble(t0 -> Imgproc.boundingRect(t0).width)));
+        Rect r = new Rect(0,0,0,0);
+        for (MatOfPoint c : contours) {
+            r = Imgproc.boundingRect(c.clone());
+            c.release();
+            if (r.y + (r.height/2.0) > horizon && r.area() > 50.0)
+                break;
+            r = new Rect(0,0,0,0);
+        }
+        possibleSignals.add(r);
+    }
+
+    private double wrapText(int i) {
+        return possibleSignals.get(0).y < 10 ? (possibleSignals.get(i).y+possibleSignals.get(i).height+20) : (possibleSignals.get(i).y - 8);
     }
 
     public Signal getSignal() {

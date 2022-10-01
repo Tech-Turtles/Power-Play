@@ -35,8 +35,8 @@ public class SignalSleeve extends Manual {
     public void loop() {
         super.loop();
         if(sleeveTracker != null) {
-            telemetry.addData("Signal Color", sleeveTracker.getColor());
-            telemetry.addData("Signal Ordinal", sleeveTracker.getOrdinal());
+            telemetry.addData("Signal Color: ", sleeveTracker.getColor());
+            telemetry.addData("Signal Ordinal: ", sleeveTracker.getOrdinal());
         }
     }
 }
