@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<Robot type="FirstInspires-FTC">
+    <LynxUsbDevice name="Expansion Hub Portal 1" serialNumber="(embedded)" parentModuleAddress="173">
+        <LynxModule name="Expansion Hub 173" port="173">
+            <LynxEmbeddedIMU            name="IMU_1"        port="0" bus="0" />
+            <goBILDA5202SeriesMotor     name="front left"   port="0" />
+            <goBILDA5202SeriesMotor     name="back left"    port="1" />
+            <goBILDA5202SeriesMotor     name="back right"   port="2" />
+            <goBILDA5202SeriesMotor     name="front right"  port="3" />
+        </LynxModule>
+        <LynxModule name="Expansion Hub 2" port="2">
+<!--            <LynxEmbeddedIMU        name="IMU_2"    port="0" bus="0" />-->
+        </LynxModule>
+    </LynxUsbDevice>
+    <Webcam name="vision" serialNumber="CD449F1F" />
+</Robot>

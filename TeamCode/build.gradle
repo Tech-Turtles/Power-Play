@@ -22,4 +22,11 @@ android {
 dependencies {
     implementation project(':FtcRobotController')
     annotationProcessor files('lib/OpModeAnnotationProcessor.jar')
+    api 'org.openftc:easyopencv:1.5.2'
+    implementation 'com.acmerobotics.roadrunner:core:0.5.5'
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+    implementation group:'com.opencsv', name: 'opencsv', version: '5.3'
+    implementation group:'org.yaml', name: 'snakeyaml', version: '1.21'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
 }
