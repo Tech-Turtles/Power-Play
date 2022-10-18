@@ -6,10 +6,10 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.Utility.*;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.StartPosition;
-import org.firstinspires.ftc.teamcode.Utility.Autonomous.Statemachine.Executive;
-import org.firstinspires.ftc.teamcode.Utility.Autonomous.Statemachine.RobotStateContext;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.RobotStateContext;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
-import org.firstinspires.ftc.teamcode.Utility.Vision.DetectionAmount;
+import org.firstinspires.ftc.teamcode.Vision.DetectionAmount;
 
 
 public class AutoOpmode extends RobotHardware {
@@ -19,38 +19,38 @@ public class AutoOpmode extends RobotHardware {
     private Executive.RobotStateMachineContextInterface robotStateContext;
     public DetectionAmount initializationDetectionAmount = null;
 
-    @Autonomous(name="Red Carousel", group="A")
+    @Autonomous(name="Red Left", group="A")
     public static class AutoRedPickup extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
-            robotStartPos = StartPosition.CAROUSEL;
+            robotStartPos = StartPosition.AUDIENCE;
             super.init();
         }
     }
 
-    @Autonomous(name="Red Warehouse", group="A")
+    @Autonomous(name="Red Right", group="A")
     public static class AutoRedBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
-            robotStartPos = StartPosition.WAREHOUSE;
+            robotStartPos = StartPosition.FAR;
             super.init();
         }
     }
 
-    @Autonomous(name="Blue Carousel", group="A")
+    @Autonomous(name="Blue Left", group="A")
     public static class AutoBluePickup extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
-            robotStartPos = StartPosition.CAROUSEL;
+            robotStartPos = StartPosition.FAR;
             super.init();
         }
     }
 
-    @Autonomous(name="Blue Warehouse", group="A")
+    @Autonomous(name="Blue Right", group="A")
     public static class AutoBlueBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
-            robotStartPos = StartPosition.WAREHOUSE;
+            robotStartPos = StartPosition.AUDIENCE;
             super.init();
         }
     }

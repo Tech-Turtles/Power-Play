@@ -1,19 +1,20 @@
-package org.firstinspires.ftc.teamcode.Utility.Vision;
+package org.firstinspires.ftc.teamcode.Vision;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.opencv.core.Rect;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-public class SignalSleeveDetector {
+public class ConeDetector {
     private OpenCvCamera camera;
     private final String webcamName;
     private final HardwareMap hardwareMap;
-    private SignalSleeveTracker pipeline;
+    private ConeTracker pipeline;
 
-    public SignalSleeveDetector(HardwareMap hardwareMap, String webcamName) {
+    public ConeDetector(HardwareMap hardwareMap, String webcamName) {
         this.hardwareMap = hardwareMap;
         this.webcamName = webcamName;
     }
@@ -26,7 +27,7 @@ public class SignalSleeveDetector {
 //            camera = OpenCvCameraFactory.getInstance().createInternalCamera(OpenCvInternalCamera.CameraDirection.BACK, cameraMonitorViewId);
 
         //Set the pipeline the camera should use and start streaming
-        pipeline = new SignalSleeveTracker();
+        pipeline = new ConeTracker();
         camera.setPipeline(pipeline);
         camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
 
@@ -42,11 +43,7 @@ public class SignalSleeveDetector {
         });
     }
 
-    public String getColor() {
-        return pipeline.getSignal().name();
-    }
-
-    public int getOrdinal() {
-        return pipeline.getSignal().ordinal();
+    public Rect getBiggestCone() {
+        return pipeline.getClosestCone();
     }
 }

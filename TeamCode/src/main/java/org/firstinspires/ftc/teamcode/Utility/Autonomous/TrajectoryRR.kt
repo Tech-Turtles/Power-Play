@@ -10,12 +10,15 @@ import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive
 
 class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
     val drive: SampleMecanumDrive = sampleMecanumDrive
+    // Start positions (Blue side)
+    val startAudience = Pose2d(-62.5,31.75,90.0.toRadians)
+    val startFar = Pose2d(-62.5,-31.75,90.0.toRadians)
 
-    private val audienceStart = Pose2d(-62.5,31.75,90.0.toRadians)
 
-    var trajectoryStartToSignalParkLeft: Trajectory? = null
-    var trajectoryStartToSignalParkMiddle: Trajectory? = null
-    var trajectoryStartToSignalParkRight: Trajectory? = null
+    // Sleeve trajectories, retrieved through the getSleeveTrajectory() function.
+    private var trajectoryStartToSignalParkFar: Trajectory? = null
+    private var trajectoryStartToSignalParkMiddle: Trajectory? = null
+    private var trajectoryStartToSignalParkAudience: Trajectory? = null
 
     private var velocityConstraint: TrajectoryVelocityConstraint? = null
     private var accelerationConstraint: TrajectoryAccelerationConstraint? = null
@@ -43,33 +46,32 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
 
     private fun buildTrajectories(color: AllianceColor) {
 
-        // Example
-//        val tempTraj: Trajectory =
-//                trajectoryBuilder(STARTPOS, (90.0 - 20.0).toRadians)
-//                        .splineToConstantHeading(CENTER.vec(), (20.0 + 90.0).toRadians)
-//                        .build()
-//        this.mainTraj = tempTraj
-
         val startToSignalParkLeft: Trajectory =
-                trajectoryBuilder(audienceStart, 0.0)
-                    .splineToSplineHeading(Pose2d(-34.0,36.0, Math.toRadians(-90.0)), Math.toRadians(-90.0))
-                    .splineToSplineHeading(Pose2d(-10.0,36.0, Math.toRadians(-90.0)), Math.toRadians(-90.0))
+                trajectoryBuilder(startAudience, 0.0)
+                    .splineToSplineHeading(Pose2d(-34.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
+                    .splineToSplineHeading(Pose2d(-10.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
                     .build()
-        this.trajectoryStartToSignalParkLeft = startToSignalParkLeft
+        this.trajectoryStartToSignalParkFar = startToSignalParkLeft
 
-        val startToSignalParkMiddle: Trajectory =
-                trajectoryBuilder(audienceStart, 0.0)
-                        .splineToSplineHeading(Pose2d(-34.0,36.0, Math.toRadians(-90.0)), Math.toRadians(-90.0))
+        this.trajectoryStartToSignalParkMiddle =
+                trajectoryBuilder(startAudience, 0.0)
+                        .splineToSplineHeading(Pose2d(-34.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
                         .build()
-        this.trajectoryStartToSignalParkMiddle = startToSignalParkMiddle
 
-        val startToSignalParkRight: Trajectory =
-                trajectoryBuilder(audienceStart, 0.0)
-                        .splineToSplineHeading(Pose2d(-34.0,36.0, Math.toRadians(-90.0)), Math.toRadians(-90.0))
-                        .splineToSplineHeading(Pose2d(-60.0,36.0, Math.toRadians(-90.0)), Math.toRadians(-90.0))
+        this.trajectoryStartToSignalParkAudience =
+                trajectoryBuilder(startAudience, 0.0)
+                        .splineToSplineHeading(Pose2d(-34.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
+                        .splineToSplineHeading(Pose2d(-60.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
                         .build()
-        this.trajectoryStartToSignalParkRight = startToSignalParkRight
+    }
 
+    fun getSleeveTrajectory(allianceColor: AllianceColor, signal: Signal): Trajectory? {
+        return when (signal) {
+            Signal.GREEN -> if(allianceColor == AllianceColor.RED) (trajectoryStartToSignalParkAudience) else (trajectoryStartToSignalParkFar)
+            Signal.BLUE -> (trajectoryStartToSignalParkMiddle)
+            Signal.YELLOW -> if(allianceColor == AllianceColor.RED) (trajectoryStartToSignalParkFar) else (trajectoryStartToSignalParkAudience)
+            else -> null
+        }
     }
 
     fun toVector2d(pose: Pose2d): Vector2d {
@@ -97,6 +99,8 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
 }
 
 val Double.toRadians get() = (Math.toRadians(this))
+
+val Int.toRadians get() = (Math.toRadians(this.toDouble()))
 
 /*
     +x is the 'positive' direction, and rotation is counter-clockwise around (0,0)

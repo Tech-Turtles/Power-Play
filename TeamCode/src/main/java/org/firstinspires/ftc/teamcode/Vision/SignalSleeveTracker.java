@@ -1,5 +1,6 @@
-package org.firstinspires.ftc.teamcode.Utility.Vision;
+package org.firstinspires.ftc.teamcode.Vision;
 
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.Signal;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -14,13 +15,6 @@ import java.util.Collections;
 import java.util.Comparator;
 
 public class SignalSleeveTracker extends OpenCvPipeline {
-
-    enum Signal {
-        NONE,
-        GREEN,
-        BLUE,
-        YELLOW
-    }
 
     Signal color = Signal.NONE;
 

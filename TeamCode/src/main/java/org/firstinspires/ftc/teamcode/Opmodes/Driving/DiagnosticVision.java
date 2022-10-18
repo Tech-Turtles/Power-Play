@@ -15,7 +15,7 @@ public class DiagnosticVision extends Diagnostic {
     @Override
     public void init_loop(){
         super.init_loop();
-        if (coneDetector == null)
+        if (visionDetection == null)
             telemetry.addData("Vision: ", "LOADING...");
         else
             telemetry.addData("Vision: ", "INITIALIZED");

@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.Opmodes.Autonomous;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
-import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.Utility.Math.ElapsedTimer;
@@ -29,7 +28,7 @@ public class TurnConeFollower extends RobotHardware {
     public void init_loop() {
         super.init_loop();
 
-        if (coneDetector == null)
+        if (visionDetection == null)
             telemetry.addData("Vision:", "LOADING...");
         else
             telemetry.addData("Vision:", "INITIALIZED");
@@ -49,33 +48,27 @@ public class TurnConeFollower extends RobotHardware {
         super.loop();
         mecanumDrive.update(packet);
 
-        if(coneDetector != null) {
+        if(visionDetection != null) {
             telemetry.addData("turn", calculateTurn());
             mecanumDrive.setWeightedDrivePower(new Pose2d(0,0,calculateTurn()));
         }
     }
 
     private double calculateTurn() {
-        if(coneDetector == null)
+        if(visionDetection == null)
             return 0;
 
-        Rect r = coneDetector.getBiggestCone();
+        Rect r = visionDetection.getPipeline().getBiggestCone();
+        if(!(r.area() > 100))
+            return 0;
+        
         double coneCenter = r.x + (r.width/2.0);
         // Return if the cone is within tolerances (cone center is within 40 px of camera center)
-        if(coneCenter > 280 && coneCenter < 320)
+        if(coneCenter > 300 && coneCenter < 340)
             return 0;
 
-        double direction = coneCenter < 280 ? 1.0 : -1.0;
-        double turn = Math.abs(coneCenter - 320);
-        switch ((int) (turn / 100)) {
-            case 0:
-                return 0.1 * direction;
-            case 1:
-                return 0.3 * direction;
-            case 2:
-                return 0.6 * direction;
-            default:
-                return 1.0 * direction;
-        }
+        double direction = coneCenter < 300 ? 1.0 : -1.0;
+        double turn = Math.abs(coneCenter - 320) / 320;
+        return turn * direction;
     }
 }

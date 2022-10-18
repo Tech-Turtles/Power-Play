@@ -32,7 +32,7 @@ import org.firstinspires.ftc.teamcode.Utility.Mecanum.AutoDrive;
 import org.firstinspires.ftc.teamcode.Utility.Mecanum.Mecanum;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.IMUUtilities;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
-import org.firstinspires.ftc.teamcode.Utility.Vision.ConeDetector;
+import org.firstinspires.ftc.teamcode.Vision.CombinedDetector;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -61,7 +61,7 @@ public class RobotHardware extends OpMode {
     // Controller objects that act as a more intuitive wrapper for the FTC gamepad class.
     public Controller primary, secondary;
 
-    public ConeDetector coneDetector;
+    public CombinedDetector visionDetection;
     public SampleMecanumDrive mecanumDrive;
     // Acme dashboard objects.
     private FtcDashboard dashboard;
@@ -360,8 +360,8 @@ public class RobotHardware extends OpMode {
     }
 
     public void loadVision() {
-        coneDetector = new ConeDetector(hardwareMap, Webcam.VISION.getName());
-        coneDetector.init();
+        visionDetection = new CombinedDetector(hardwareMap, Webcam.VISION.getName());
+        visionDetection.init();
     }
 
     public void clearHubCache() {
@@ -499,5 +499,7 @@ public class RobotHardware extends OpMode {
         motorUtility.stopAllMotors();
         for (ContinuousServo servo : ContinuousServo.values())
             servoUtility.setPower(servo, 0);
+
+        //ToDo Add stop function to vision thread
     }
 }

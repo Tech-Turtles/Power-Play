@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Utility.Autonomous.Statemachine;
+package org.firstinspires.ftc.teamcode.Utility.Autonomous;
 
 import android.util.Log;
 
@@ -40,9 +40,9 @@ public class Executive {
          */
         public enum StateType {
             DRIVE,
+            TURRET,
             SLIDE,
-            INTAKE,
-            CAROUSEL
+            INTAKE
         }
 
         public StateMachine(T_opmode opMode) {

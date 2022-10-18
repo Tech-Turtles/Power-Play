@@ -4,7 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Webcam;
-import org.firstinspires.ftc.teamcode.Utility.Vision.SignalSleeveDetector;
+import org.firstinspires.ftc.teamcode.Vision.SignalSleeveDetector;
 
 @TeleOp(name="Signal Sleeve", group="B")
 @Config

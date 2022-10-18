@@ -1,17 +1,18 @@
 package org.firstinspires.ftc.teamcode.Opmodes.Driving;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
 import org.firstinspires.ftc.teamcode.Utility.*;
-import org.firstinspires.ftc.teamcode.Utility.Autonomous.Statemachine.Executive;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.TrajectoryRR;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
+import org.opencv.core.Rect;
 
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Statemachine.Executive.StateMachine.StateType.*;
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.*;
 
 
 @Config
@@ -29,16 +30,12 @@ public class Manual extends RobotHardware {
     private final Executive.StateMachine<Manual> stateMachine;
     private TrajectoryRR trajectoryRR;
 
-    private Pose2d saveLocation = new Pose2d();
-
-    // Align to Point code
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,
         NORMAL_FIELD_CENTRIC
     }
+
     private DriveMode currentDriveMode = DriveMode.NORMAL_ROBOT_CENTRIC;
-    private final PIDFController headingController = new PIDFController(SampleMecanumDrive.HEADING_PID);
-    private Vector2d targetPosition = new Vector2d(12*6,-12);
 
     public Manual() {
         stateMachine = new Executive.StateMachine<>(this);
@@ -49,8 +46,9 @@ public class Manual extends RobotHardware {
     public void init() {
         super.init();
         stateMachine.changeState(DRIVE, new Drive_Manual());
+        stateMachine.changeState(TURRET, new Turret_Stop());
         stateMachine.init();
-        headingController.setInputBounds(-Math.PI, Math.PI);
+
         mecanumDrive = new SampleMecanumDrive(hardwareMap, this);
         trajectoryRR = new TrajectoryRR(this.mecanumDrive);
     }
@@ -75,64 +73,101 @@ public class Manual extends RobotHardware {
         displayTelemetry();
     }
 
-    /*
-    Manual Control States
-     */
-    static class Drive_Manual extends Executive.StateBase<Manual> {
+    class Drive_Manual extends Executive.StateBase<Manual> {
         @Override
         public void update() {
             super.update();
-            opMode.drivetrainStandardControls();
+//            Pose2d poseEstimate = mecanumDrive.getPoseEstimate();
+//            Pose2d driveDirection = new Pose2d();
+//
+//            if(opMode.primary.AOnce()) {
+//                precisionMode = precisionMode == 1 ? precisionPercentage : 1;
+//            }
+//
+//            if(primary.YOnce()) {
+//                direction = -direction;
+//            }
+//
+//            if(primary.startOnce())
+//                currentDriveMode = currentDriveMode == DriveMode.NORMAL_ROBOT_CENTRIC ? DriveMode.NORMAL_FIELD_CENTRIC : DriveMode.NORMAL_ROBOT_CENTRIC;
+//
+//            switch (currentDriveMode) {
+//                case NORMAL_ROBOT_CENTRIC:
+//                    driveDirection = new Pose2d(
+//                            (-primary.left_stick_y * direction) * linearSpeed * precisionMode,
+//                            (-primary.left_stick_x * direction) * lateralSpeed * precisionMode,
+//                            -primary.right_stick_x * rotationSpeed * precisionMode
+//                    );
+//                    break;
+//                case NORMAL_FIELD_CENTRIC:
+//                    Vector2d fieldFrameInput = new Vector2d(
+//                            -gamepad1.left_stick_y * linearSpeed * precisionMode,
+//                            -gamepad1.left_stick_x * lateralSpeed * precisionMode);
+//
+//                    Vector2d robotFrameInput = fieldFrameInput
+//                            .rotated(-poseEstimate.getHeading() + Math.toRadians(90.0));
+//                    driveDirection = new Pose2d(
+//                            robotFrameInput.getX(), robotFrameInput.getY(),
+//                            -primary.right_stick_x * rotationSpeed * precisionMode
+//                    );
+//                    break;
+//            }
+//
+//            if(currentDriveMode != DriveMode.NORMAL_FIELD_CENTRIC && Math.abs(primary.right_stick_x) > 0.1) {
+//                currentDriveMode = DriveMode.NORMAL_ROBOT_CENTRIC;
+//            }
+//
+//            mecanumDrive.setWeightedDrivePower(driveDirection);
+
+//            if(primary.X())
+//                opMode.motorUtility.setPower(Motors.FRONT_RIGHT, 1.0 * precisionMode * direction);
+//            else
+//                opMode.motorUtility.setPower(Motors.FRONT_RIGHT, 0.0);
+
+            if(primary.X() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Cone_Align.class)) {
+                stateMachine.changeState(TURRET, new Turret_Cone_Align());
+            } else if(!primary.X() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Stop.class)) {
+                stateMachine.changeState(TURRET, new Turret_Stop());
+            }
+        }
+    }
+    //ToDo Implement distance estimation + driving & grabbing cone autonomously
+    class Turret_Cone_Align extends Executive.StateBase<Manual> {
+
+        @Override
+        public void update() {
+            super.update();
+            double turn = calculateTurn();
+            telemetry.addData("turn", turn);
+            motorUtility.setPower(Motors.FRONT_RIGHT, turn * precisionMode * 0.5);
+        }
+
+        private double calculateTurn() {
+            if(visionDetection == null)
+                return 0.0;
+
+            Rect r = visionDetection.getPipeline().getBiggestCone();
+
+            if(!(r.area() > 20))
+                return 0.0;
+
+            double coneCenter = r.x + (r.width/2.0);
+            // Return if the cone is within tolerances (cone center is within 40 px of camera center)
+            if(coneCenter > 310.0 && coneCenter < 330.0)
+                return 0.0;
+
+            double direction = coneCenter < 300.0 ? 1.0 : -1.0;
+            double turn = Math.abs(coneCenter - 320) / 320.0;
+            return turn * direction;
         }
     }
 
-    /*
-    End of Manual Control States
-     */
-
-    void drivetrainStandardControls() {
-        Pose2d poseEstimate = mecanumDrive.getPoseEstimate();
-        Pose2d driveDirection = new Pose2d();
-
-        Vector2d fieldFrameInput = new Vector2d(
-                -gamepad1.left_stick_y * linearSpeed * precisionMode,
-                -gamepad1.left_stick_x * lateralSpeed * precisionMode);
-
-        Vector2d robotFrameInput = fieldFrameInput
-                .rotated(-poseEstimate.getHeading() + Math.toRadians(90.0));
-
-        if(primary.AOnce()) {
-            precisionMode = precisionMode == 1 ? precisionPercentage : 1;
+    class Turret_Stop extends Executive.StateBase<Manual> {
+        @Override
+        public void init(Executive.StateMachine<Manual> stateMachine) {
+            super.init(stateMachine);
+            motorUtility.setPower(Motors.FRONT_RIGHT, 0.0);
         }
-
-        if(primary.YOnce()) {
-            direction = -direction;
-        }
-
-        if(primary.startOnce())
-            currentDriveMode = currentDriveMode == DriveMode.NORMAL_ROBOT_CENTRIC ? DriveMode.NORMAL_FIELD_CENTRIC : DriveMode.NORMAL_ROBOT_CENTRIC;
-
-        switch (currentDriveMode) {
-            case NORMAL_ROBOT_CENTRIC:
-                driveDirection = new Pose2d(
-                        (-primary.left_stick_y * direction) * linearSpeed * precisionMode,
-                        (-primary.left_stick_x * direction) * lateralSpeed * precisionMode,
-                        -primary.right_stick_x * rotationSpeed * precisionMode
-                );
-                break;
-            case NORMAL_FIELD_CENTRIC:
-                driveDirection = new Pose2d(
-                        robotFrameInput.getX(), robotFrameInput.getY(),
-                        -primary.right_stick_x * rotationSpeed * precisionMode
-                );
-                break;
-        }
-
-        if(currentDriveMode != DriveMode.NORMAL_FIELD_CENTRIC && Math.abs(primary.right_stick_x) > 0.1) {
-            currentDriveMode = DriveMode.NORMAL_ROBOT_CENTRIC;
-        }
-
-        mecanumDrive.setWeightedDrivePower(driveDirection);
     }
 
     void displayTelemetry() {
@@ -154,12 +189,4 @@ public class Manual extends RobotHardware {
         mecanumDrive.cancelFollowing();
         mecanumDrive.setDrivePower(new Pose2d());
     }
-
-    static class Stop extends Executive.StateBase<Manual> {
-        @Override
-        public void update() {
-            super.update();
-        }
-    }
-
 }
