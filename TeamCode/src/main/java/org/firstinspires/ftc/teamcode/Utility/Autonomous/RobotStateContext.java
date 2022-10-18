@@ -5,6 +5,7 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
 import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
+import org.firstinspires.ftc.teamcode.Vision.TrackType;
 
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.*;
 import static org.firstinspires.ftc.teamcode.Utility.RobotHardware.df;
@@ -94,23 +95,25 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
      * Next State:
      */
     class Scan extends Executive.StateBase<AutoOpmode> {
+        boolean visionInitialized = false;
 
         @Override
         public void update() {
             super.update();
-//            if(autoOpmode.coneDetector != null)
-//                signal = opMode.coneDetector;
 
-            switch (startPosition) {
+            if(!visionInitialized)
+                initializeVision();
+            else
+                signal = opMode.visionDetection.getPipeline().getSignalColor();
 
-            }
+            if(!signal.equals(Signal.NONE) || stateTimer.seconds() > visionTimeout)
+                nextState(DRIVE, new StartToSignalPark());
+        }
 
-            switch (startPosition) {
-                case AUDIENCE:
-                    nextState(DRIVE, new Stop());
-                    break;
-                case FAR:
-                    nextState(DRIVE, new Stop());
+        private void initializeVision() {
+            if(opMode.visionDetection != null && opMode.visionDetection.getPipeline() != null) {
+                opMode.visionDetection.getPipeline().setTrackType(TrackType.SLEEVE);
+                visionInitialized = true;
             }
         }
     }
