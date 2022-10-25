@@ -10,11 +10,9 @@
         </LynxModule>
         <LynxModule name="Expansion Hub 2" port="2">
 <!--            <LynxEmbeddedIMU        name="IMU_2"    port="0" bus="0" />-->
-            <goBILDA5202SeriesMotor     name="turret"  port="0" />
-            <Servo                      name="arm left" port="0"/>
-            <Servo                      name="arm right" port="1"/>
-            <ContinuousRotationServo    name="intake close" port="2"/>
-            <ContinuousRotationServo    name="intake far" port="3"/>
+            <goBILDA5202SeriesMotor     name="slide"  port="0" />
+            <Servo                      name="grab left" port="0"/>
+            <Servo                      name="grab right" port="1"/>
         </LynxModule>
     </LynxUsbDevice>
     <Webcam name="vision" serialNumber="CD449F1F" />

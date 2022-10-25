@@ -65,10 +65,10 @@ import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kV;
  */
 @Config
 public class SampleMecanumDrive extends MecanumDrive {
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(0, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(0, 0, 0);
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(8, 0, 0);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(8, 0, 0);
 
-    public static double LATERAL_MULTIPLIER = 1.0;
+    public static double LATERAL_MULTIPLIER = 1.154;
 
     public static double VX_WEIGHT = 1;
     public static double VY_WEIGHT = 1;
@@ -169,6 +169,8 @@ public class SampleMecanumDrive extends MecanumDrive {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
             motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
             motor.setMotorType(motorConfigurationType);
+            if(opmode==null)
+                motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         }
 
         if (RUN_USING_ENCODER && MOTOR_VELO_PID != null) {

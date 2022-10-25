@@ -6,6 +6,7 @@ import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
+import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Utility.*;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.TrajectoryRR;
@@ -13,6 +14,11 @@ import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
 import org.opencv.core.Rect;
 
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.*;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.ARM_HIGH_POS;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.ARM_LOW_POS;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.ARM_MAX;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.ARM_MEDIUM_POS;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.ARM_PICKUP_POS;
 
 
 @Config
@@ -24,8 +30,10 @@ public class Manual extends RobotHardware {
     public static double precisionPercentage = 0.35;
     public static double linearSpeed = 1.0;
     public static double lateralSpeed = 1.0;
-    public static double rotationSpeed = 1.0;
+    public static double rotationSpeed = 0.6;
     public static int direction = 1;
+
+    public static int armOffset = 0;
 
     private final Executive.StateMachine<Manual> stateMachine;
     private TrajectoryRR trajectoryRR;
@@ -46,7 +54,7 @@ public class Manual extends RobotHardware {
     public void init() {
         super.init();
         stateMachine.changeState(DRIVE, new Drive_Manual());
-        stateMachine.changeState(TURRET, new Turret_Stop());
+        stateMachine.changeState(SLIDE, new ArmManual());
         stateMachine.init();
 
         mecanumDrive = new SampleMecanumDrive(hardwareMap, this);
@@ -77,96 +85,134 @@ public class Manual extends RobotHardware {
         @Override
         public void update() {
             super.update();
-//            Pose2d poseEstimate = mecanumDrive.getPoseEstimate();
-//            Pose2d driveDirection = new Pose2d();
-//
-//            if(opMode.primary.AOnce()) {
-//                precisionMode = precisionMode == 1 ? precisionPercentage : 1;
-//            }
-//
-//            if(primary.YOnce()) {
-//                direction = -direction;
-//            }
-//
+            Pose2d poseEstimate = mecanumDrive.getPoseEstimate();
+            Pose2d driveDirection = new Pose2d();
+
+            if(opMode.primary.AOnce()) {
+                precisionMode = precisionMode == 1 ? precisionPercentage : 1;
+            }
+
+            if(primary.YOnce()) {
+                direction = -direction;
+            }
+
 //            if(primary.startOnce())
 //                currentDriveMode = currentDriveMode == DriveMode.NORMAL_ROBOT_CENTRIC ? DriveMode.NORMAL_FIELD_CENTRIC : DriveMode.NORMAL_ROBOT_CENTRIC;
-//
-//            switch (currentDriveMode) {
-//                case NORMAL_ROBOT_CENTRIC:
-//                    driveDirection = new Pose2d(
-//                            (-primary.left_stick_y * direction) * linearSpeed * precisionMode,
-//                            (-primary.left_stick_x * direction) * lateralSpeed * precisionMode,
-//                            -primary.right_stick_x * rotationSpeed * precisionMode
-//                    );
-//                    break;
-//                case NORMAL_FIELD_CENTRIC:
-//                    Vector2d fieldFrameInput = new Vector2d(
-//                            -gamepad1.left_stick_y * linearSpeed * precisionMode,
-//                            -gamepad1.left_stick_x * lateralSpeed * precisionMode);
-//
-//                    Vector2d robotFrameInput = fieldFrameInput
-//                            .rotated(-poseEstimate.getHeading() + Math.toRadians(90.0));
-//                    driveDirection = new Pose2d(
-//                            robotFrameInput.getX(), robotFrameInput.getY(),
-//                            -primary.right_stick_x * rotationSpeed * precisionMode
-//                    );
-//                    break;
-//            }
-//
-//            if(currentDriveMode != DriveMode.NORMAL_FIELD_CENTRIC && Math.abs(primary.right_stick_x) > 0.1) {
-//                currentDriveMode = DriveMode.NORMAL_ROBOT_CENTRIC;
-//            }
-//
-//            mecanumDrive.setWeightedDrivePower(driveDirection);
 
-//            if(primary.X())
-//                opMode.motorUtility.setPower(Motors.FRONT_RIGHT, 1.0 * precisionMode * direction);
-//            else
-//                opMode.motorUtility.setPower(Motors.FRONT_RIGHT, 0.0);
+            switch (currentDriveMode) {
+                case NORMAL_ROBOT_CENTRIC:
+                    driveDirection = new Pose2d(
+                            (-primary.left_stick_y * direction) * linearSpeed * precisionMode,
+                            (-primary.left_stick_x * direction) * lateralSpeed * precisionMode,
+                            -primary.right_stick_x * rotationSpeed * precisionMode
+                    );
+                    break;
+                case NORMAL_FIELD_CENTRIC:
+                    Vector2d fieldFrameInput = new Vector2d(
+                            -gamepad1.left_stick_y * linearSpeed * precisionMode,
+                            -gamepad1.left_stick_x * lateralSpeed * precisionMode);
 
-            if(primary.X() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Cone_Align.class)) {
-                stateMachine.changeState(TURRET, new Turret_Cone_Align());
-            } else if(!primary.X() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Stop.class)) {
-                stateMachine.changeState(TURRET, new Turret_Stop());
+                    Vector2d robotFrameInput = fieldFrameInput
+                            .rotated(-poseEstimate.getHeading() + Math.toRadians(90.0));
+                    driveDirection = new Pose2d(
+                            robotFrameInput.getX(), robotFrameInput.getY(),
+                            -primary.right_stick_x * rotationSpeed * precisionMode
+                    );
+                    break;
+            }
+
+            if(currentDriveMode != DriveMode.NORMAL_FIELD_CENTRIC && Math.abs(primary.right_stick_x) > 0.1) {
+                currentDriveMode = DriveMode.NORMAL_ROBOT_CENTRIC;
+            }
+
+            mecanumDrive.setWeightedDrivePower(driveDirection);
+
+            if(secondary.leftStickButtonOnce())
+                armOffset = motorUtility.getEncoderValue(Motors.SLIDE);
+
+            if(secondary.XOnce() || secondary.rightTriggerOnce())
+                stateMachine.changeState(SLIDE, new ArmIntake());
+            else if(secondary.AOnce())
+                stateMachine.changeState(SLIDE, new ArmLow());
+            else if(secondary.BOnce() || secondary.leftTriggerOnce())
+                stateMachine.changeState(SLIDE, new ArmHigh());
+            else if(secondary.YOnce())
+                stateMachine.changeState(SLIDE, new ArmMedium());
+
+            if(primary.rightTriggerOnce() || secondary.rightBumperOnce()) {
+                servoUtility.setAngle(Servos.GRAB_LEFT, 0.0);
+                servoUtility.setAngle(Servos.GRAB_RIGHT, 0.0);
+            } else if(primary.leftTriggerOnce() || secondary.leftBumperOnce()) {
+                servoUtility.setAngle(Servos.GRAB_LEFT, 0.9);
+                servoUtility.setAngle(Servos.GRAB_RIGHT, 0.9);
             }
         }
     }
-    //ToDo Implement distance estimation + driving & grabbing cone autonomously
-    class Turret_Cone_Align extends Executive.StateBase<Manual> {
+
+    static class ArmIntake extends Executive.StateBase<Manual> {
+        @Override
+        public void update() {
+            super.update();
+            if(Math.abs(opMode.secondary.left_stick_y) > 0.2)
+                opMode.stateMachine.changeState(SLIDE, new ArmManual());
+            else
+                opMode.motorUtility.goToPosition(Motors.SLIDE, ARM_PICKUP_POS + armOffset, 1.0);
+        }
+    }
+
+    static class ArmLow extends Executive.StateBase<Manual> {
+        @Override
+        public void update() {
+            super.update();
+            if(Math.abs(opMode.secondary.left_stick_y) > 0.2)
+                opMode.stateMachine.changeState(SLIDE, new ArmManual());
+            else
+                opMode.motorUtility.goToPosition(Motors.SLIDE, ARM_LOW_POS + armOffset, 1.0);
+        }
+    }
+
+    static class ArmMedium extends Executive.StateBase<Manual> {
+        @Override
+        public void update() {
+            super.update();
+            if(Math.abs(opMode.secondary.left_stick_y) > 0.2)
+                opMode.stateMachine.changeState(SLIDE, new ArmManual());
+            else
+                opMode.motorUtility.goToPosition(Motors.SLIDE, ARM_MEDIUM_POS + armOffset, 1.0);
+        }
+    }
+
+    static class ArmHigh extends Executive.StateBase<Manual> {
+        @Override
+        public void update() {
+            super.update();
+            if(Math.abs(opMode.secondary.left_stick_y) > 0.2)
+                opMode.stateMachine.changeState(SLIDE, new ArmManual());
+            else
+                opMode.motorUtility.goToPosition(Motors.SLIDE, ARM_HIGH_POS + armOffset, 1.0);
+        }
+    }
+
+    static class ArmManual extends Executive.StateBase<Manual> {
+        int armPos;
+
+        @Override
+        public void init(Executive.StateMachine<Manual> stateMachine) {
+            super.init(stateMachine);
+            armPos = opMode.motorUtility.getEncoderValue(Motors.SLIDE);
+        }
 
         @Override
         public void update() {
             super.update();
-            double turn = calculateTurn();
-            telemetry.addData("turn", turn);
-            motorUtility.setPower(Motors.FRONT_RIGHT, turn * precisionMode * 0.5);
-        }
-
-        private double calculateTurn() {
-            if(visionDetection == null)
-                return 0.0;
-
-            Rect r = visionDetection.getPipeline().getBiggestCone();
-
-            if(!(r.area() > 20))
-                return 0.0;
-
-            double coneCenter = r.x + (r.width/2.0);
-            // Return if the cone is within tolerances (cone center is within 40 px of camera center)
-            if(coneCenter > 310.0 && coneCenter < 330.0)
-                return 0.0;
-
-            double direction = coneCenter < 300.0 ? 1.0 : -1.0;
-            double turn = Math.abs(coneCenter - 320) / 320.0;
-            return turn * direction;
-        }
-    }
-
-    class Turret_Stop extends Executive.StateBase<Manual> {
-        @Override
-        public void init(Executive.StateMachine<Manual> stateMachine) {
-            super.init(stateMachine);
-            motorUtility.setPower(Motors.FRONT_RIGHT, 0.0);
+            if(Math.abs(opMode.secondary.left_stick_y) > 0.2) {
+                if (opMode.secondary.left_stick_y < 0.2 || opMode.motorUtility.getEncoderValue(Motors.SLIDE) < ARM_MAX) {
+                    opMode.motorUtility.setPower(Motors.SLIDE, -opMode.secondary.left_stick_y*0.8);
+                    armPos = opMode.motorUtility.getEncoderValue(Motors.SLIDE);
+                }
+            } else {
+                opMode.motorUtility.goToPosition(Motors.SLIDE, armPos, 1.0);
+            }
         }
     }
 

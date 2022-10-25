@@ -11,22 +11,22 @@ import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive
 class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
     val drive: SampleMecanumDrive = sampleMecanumDrive
     // Start positions (Blue side)
-    val startAudience = Pose2d(-62.5,31.75,90.0.toRadians)
-    val startFar = Pose2d(-62.5,-31.75,90.0.toRadians)
+    val startAudience = Pose2d(-60.5,31.75,180.0.toRadians)
+    val startFar = Pose2d(-62.5,-31.75,180.0.toRadians)
 
 
     // Sleeve trajectories, retrieved through the getSleeveTrajectory() function.
-    private var trajectoryStartToSignalParkFar: Trajectory? = null
-    private var trajectoryStartToSignalParkMiddle: Trajectory? = null
-    private var trajectoryStartToSignalParkAudience: Trajectory? = null
+    var trajectoryStartToSignalParkFar: Trajectory? = null
+    var trajectoryStartToSignalParkMiddle: Trajectory? = null
+    var trajectoryStartToSignalParkAudience: Trajectory? = null
 
     private var velocityConstraint: TrajectoryVelocityConstraint? = null
     private var accelerationConstraint: TrajectoryAccelerationConstraint? = null
     private var slowVelocityConstraint: TrajectoryVelocityConstraint? = null
     private var slowAccelerationConstraint: TrajectoryAccelerationConstraint? = null
 
-    private val slowVelocity: Double = 18.0
-    private val slowAcceleration: Double = 40.0
+    private val slowVelocity: Double = 25.0
+    private val slowAcceleration: Double = 60.0
 
     val list = ArrayList<Trajectory>()
 
@@ -46,31 +46,30 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
 
     private fun buildTrajectories(color: AllianceColor) {
 
-        val startToSignalParkLeft: Trajectory =
-                trajectoryBuilder(startAudience, 0.0)
-                    .splineToSplineHeading(Pose2d(-34.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
-                    .splineToSplineHeading(Pose2d(-10.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
-                    .build()
-        this.trajectoryStartToSignalParkFar = startToSignalParkLeft
+        this.trajectoryStartToSignalParkAudience =
+                trajectoryBuilder(startAudience, 120.0)
+                        .splineToConstantHeading(Vector2d(-56.0,60.0), (0.0).toRadians)
+                        .splineToConstantHeading(Vector2d(-31.0,60.0), 0.0.toRadians)
+                        .build()
 
         this.trajectoryStartToSignalParkMiddle =
                 trajectoryBuilder(startAudience, 0.0)
-                        .splineToSplineHeading(Pose2d(-34.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
+                        .splineToConstantHeading(Vector2d(-26.0,35.0), (0.0).toRadians)
                         .build()
 
-        this.trajectoryStartToSignalParkAudience =
-                trajectoryBuilder(startAudience, 0.0)
-                        .splineToSplineHeading(Pose2d(-34.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
-                        .splineToSplineHeading(Pose2d(-60.0,36.0, (-90.0).toRadians), (-90.0).toRadians)
+        this.trajectoryStartToSignalParkFar =
+                trajectoryBuilder(startAudience, 200.0)
+                        .splineToConstantHeading(Vector2d(-56.0,12.0), (0.0).toRadians)
+                        .splineToConstantHeading(Vector2d(-26.0,12.0), 0.0.toRadians)
                         .build()
     }
 
     fun getSleeveTrajectory(allianceColor: AllianceColor, signal: Signal): Trajectory? {
         return when (signal) {
-            Signal.GREEN -> if(allianceColor == AllianceColor.RED) (trajectoryStartToSignalParkAudience) else (trajectoryStartToSignalParkFar)
+            Signal.GREEN -> if(allianceColor == AllianceColor.RED) (trajectoryStartToSignalParkAudience) else (trajectoryStartToSignalParkAudience)
             Signal.BLUE -> (trajectoryStartToSignalParkMiddle)
-            Signal.YELLOW -> if(allianceColor == AllianceColor.RED) (trajectoryStartToSignalParkFar) else (trajectoryStartToSignalParkAudience)
-            else -> null
+            Signal.YELLOW -> if(allianceColor == AllianceColor.RED) (trajectoryStartToSignalParkFar) else (trajectoryStartToSignalParkFar)
+            else -> (trajectoryStartToSignalParkMiddle)
         }
     }
 

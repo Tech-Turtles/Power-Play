@@ -60,11 +60,11 @@ public class CombinedTracker extends OpenCvPipeline {
     public Scalar poleLower = new Scalar(59, 134, 48);
     public Scalar poleHigher = new Scalar(180, 180, 105);
     // Signal sleeve mask scalars
-    private final Scalar greenLower = new Scalar(32, 10, 75);
+    private final Scalar greenLower = new Scalar(32, 10, 10);
     private final Scalar greenUpper = new Scalar(86, 255,255);
-    private final Scalar blueLower = new Scalar(80, 140, 75);
+    private final Scalar blueLower = new Scalar(80, 32, 70);
     private final Scalar blueUpper = new Scalar(133, 255, 190);
-    private final Scalar yellowLower = new Scalar(17, 100, 100);
+    private final Scalar yellowLower = new Scalar(17, 10, 10);
     private final Scalar yellowUpper = new Scalar(40, 255, 255);
     // Mat objects
     private final Mat maskRed = new Mat();

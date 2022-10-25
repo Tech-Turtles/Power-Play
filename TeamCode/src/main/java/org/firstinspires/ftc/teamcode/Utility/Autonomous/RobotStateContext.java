@@ -4,10 +4,15 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
+import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
 import org.firstinspires.ftc.teamcode.Vision.TrackType;
 
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.*;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.ARM_HIGH_POS;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.ARM_MEDIUM_POS;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.ARM_PICKUP_POS;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.deadzone;
 import static org.firstinspires.ftc.teamcode.Utility.RobotHardware.df;
 
 @Config
@@ -21,7 +26,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     private TrajectoryRR trajectoryRR;
     private Signal signal = Signal.NONE;
 
-    private static double visionTimeout = 1.0;
+    private static double visionTimeout = 2.0;
 
     public RobotStateContext(AutoOpmode autoOpmode, AllianceColor allianceColor, StartPosition startPosition) {
         this.autoOpmode = autoOpmode;
@@ -98,6 +103,12 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         boolean visionInitialized = false;
 
         @Override
+        public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
+            super.init(stateMachine);
+            visionInitialized = false;
+        }
+
+        @Override
         public void update() {
             super.update();
 
@@ -106,7 +117,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             else
                 signal = opMode.visionDetection.getPipeline().getSignalColor();
 
-            if(!signal.equals(Signal.NONE) || stateTimer.seconds() > visionTimeout)
+            if(!signal.equals(Signal.NONE) || stateTimer.seconds() > 20)
                 nextState(DRIVE, new StartToSignalPark());
         }
 
@@ -132,6 +143,47 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
 
             if(opMode.mecanumDrive.isIdle())
                 nextState(DRIVE, new Stop());
+        }
+    }
+
+    class SlidePosition extends Executive.StateBase<AutoOpmode> {
+        private final int position;
+        private final double delay;
+        boolean reset;
+
+        SlidePosition(int position, double delay) {
+            this.position = position;
+            this.delay = delay;
+            reset = delay == 0.0;
+        }
+
+        @Override
+        public void update() {
+            super.update();
+            if(!reset) {
+                reset = true;
+                stateTimer.reset();
+            }
+            if(stateTimer.seconds() > delay)
+                isDone = opMode.motorUtility.goToPosition(Motors.SLIDE, position, 1.0);
+        }
+    }
+
+    class HoldCone extends Executive.StateBase<AutoOpmode> {
+        @Override
+        public void update() {
+            super.update();
+            opMode.servoUtility.setAngle(Servos.GRAB_LEFT, 0.0);
+            opMode.servoUtility.setAngle(Servos.GRAB_RIGHT, 0.0);
+        }
+    }
+
+    class DropCone extends Executive.StateBase<AutoOpmode> {
+        @Override
+        public void update() {
+            super.update();
+            opMode.servoUtility.setAngle(Servos.GRAB_LEFT, 0.9);
+            opMode.servoUtility.setAngle(Servos.GRAB_RIGHT, 0.9);
         }
     }
 

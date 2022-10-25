@@ -31,8 +31,8 @@ public class DriveConstants {
      * If using the built-in motor velocity PID, update MOTOR_VELO_PID with the tuned coefficients
      * from DriveVelocityPIDTuner.
      */
-    public static final boolean RUN_USING_ENCODER = false;
-    public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(0, 0, 0, getMotorVelocityF(MAX_RPM / 60 * TICKS_PER_REV));
+    public static final boolean RUN_USING_ENCODER = true;
+    public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(14, 0, 2, 13.195);
 
     /*
      * These are physical constants that can be determined from your robot (including the track
@@ -43,8 +43,9 @@ public class DriveConstants {
      * convenience. Make sure to exclude any gear ratio included in MOTOR_CONFIG from GEAR_RATIO.
      */
     public static double WHEEL_RADIUS = 1.87570478; // in
-    public static double GEAR_RATIO = 1; // output (wheel) speed / input (motor) speed
-    public static double TRACK_WIDTH = 14.9; // in
+    public static double GEAR_RATIO = 1.02; // output (wheel) speed / input (motor) speed
+    // Manually tuned
+    public static double TRACK_WIDTH = 15.5; // in
 
     /*
      * These are the feedforward parameters used to model the drive motor behavior. If you are using
@@ -65,13 +66,13 @@ public class DriveConstants {
      */
     // Calculate max velocity and reduce it to 80% in order to prevent errors from the motor being unable to reach its max.
     //ToDo Increase velocity and see if it negatively effects performance.
-    public static double MAX_VEL = ((MAX_RPM / 60) * GEAR_RATIO * WHEEL_RADIUS * (2 * Math.PI)) * 0.80;
+    public static double MAX_VEL = 80.0;
     //ToDo Increase Acceleration until it causes issues.
     public static double MAX_ACCEL = 30;
-    //ToDo Increase Angle Velocity.
-    public static double MAX_ANG_VEL = Math.toRadians(180);
+    //Tuner said it was 393 degrees.
+    public static double MAX_ANG_VEL = Math.toRadians(300);
     //ToDo Increase Angle Acceleration.
-    public static double MAX_ANG_ACCEL = Math.toRadians(180);
+    public static double MAX_ANG_ACCEL = Math.toRadians(120);
 
 
     public static double encoderTicksToInches(double ticks) {

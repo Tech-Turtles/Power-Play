@@ -26,7 +26,7 @@ public class Vision extends Manual {
 
         if(visionDetection != null) {
             if(visionDetection.getPipeline() != null)
-                visionDetection.getPipeline().setTrackType(TrackType.CONE);
+                visionDetection.getPipeline().setTrackType(TrackType.SLEEVE);
         }
     }
 
