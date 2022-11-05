@@ -9,7 +9,12 @@ import org.firstinspires.ftc.teamcode.Utility.Autonomous.StartPosition;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.RobotStateContext;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Vision.AprilTagDetector;
 import org.firstinspires.ftc.teamcode.Vision.DetectionAmount;
+import org.firstinspires.ftc.teamcode.Vision.TrackType;
+import org.openftc.apriltag.AprilTagDetection;
+
+import java.util.ArrayList;
 
 
 public class AutoOpmode extends RobotHardware {
@@ -17,7 +22,12 @@ public class AutoOpmode extends RobotHardware {
     AllianceColor robotColor;
     StartPosition robotStartPos;
     private Executive.RobotStateMachineContextInterface robotStateContext;
-    public DetectionAmount initializationDetectionAmount = null;
+    int LEFT = 1;
+    int MIDDLE = 2;
+    int RIGHT = 3;
+
+    public AprilTagDetection tagOfInterest = null;
+    boolean visionInitialized = false;
 
     @Autonomous(name="Red Left", group="A")
     public static class AutoRedPickup extends AutoOpmode {
@@ -71,7 +81,63 @@ public class AutoOpmode extends RobotHardware {
     public void init_loop() {
         super.init_loop();
         primary.update();
+        if(visionDetection == null || visionDetection.getPipeline() == null)
+            return;
+        if(!visionInitialized) {
+            visionDetection.getPipeline().setTrackType(TrackType.SLEEVE);
+            visionInitialized = true;
+        }
 
+        ArrayList<AprilTagDetection> currentDetections = visionDetection.getPipeline().getLatestDetections();
+        if(currentDetections.size() != 0)
+        {
+            boolean tagFound = false;
+
+            for(AprilTagDetection tag : currentDetections)
+            {
+                if(tag.id == LEFT || tag.id == MIDDLE || tag.id == RIGHT)
+                {
+                    tagOfInterest = tag;
+                    tagFound = true;
+                    break;
+                }
+            }
+
+            if(tagFound)
+            {
+                telemetry.addData("Tag: ", tagOfInterest.id);
+            }
+            else
+            {
+                telemetry.addLine("Don't see tag of interest :(");
+
+                if(tagOfInterest == null)
+                {
+                    telemetry.addLine("(The tag has never been seen)");
+                }
+                else
+                {
+                    telemetry.addLine("\nBut we HAVE seen the tag before");
+                }
+            }
+
+        }
+        else
+        {
+            telemetry.addLine("Don't see tag of interest :(");
+
+            if(tagOfInterest == null)
+            {
+                telemetry.addLine("(The tag has never been seen)");
+            }
+            else
+            {
+                telemetry.addLine("\nBut we HAVE seen the tag before");
+            }
+
+        }
+
+        telemetry.update();
     }
 
     @Override

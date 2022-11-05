@@ -65,10 +65,10 @@ import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kV;
  */
 @Config
 public class SampleMecanumDrive extends MecanumDrive {
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(0, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(0, 0, 0);
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(8, 0, 0);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(8, 0, 0);
 
-    public static double LATERAL_MULTIPLIER = 1.0;
+    public static double LATERAL_MULTIPLIER = 1.1476;
 
     public static double VX_WEIGHT = 1;
     public static double VY_WEIGHT = 1;
@@ -135,7 +135,6 @@ public class SampleMecanumDrive extends MecanumDrive {
 
         batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        // Adjust the names of the following hardware devices to match your configuration
         imu = hardwareMap.get(BNO055IMU.class, IMU.IMU1.getName());
         if(imu != null) {
             BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
@@ -144,8 +143,9 @@ public class SampleMecanumDrive extends MecanumDrive {
 
             // If your hub is mounted vertically, remap the IMU axes so that the z-axis points
             // upward (normal to the floor) using a command like the following:
-//            BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
+            BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
         }
+
         if(opmode != null) {
             leftFront = opmode.motorUtility.getMotorReference(Motors.FRONT_LEFT);
             leftRear = opmode.motorUtility.getMotorReference(Motors.BACK_LEFT);
@@ -169,6 +169,7 @@ public class SampleMecanumDrive extends MecanumDrive {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
             motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
             motor.setMotorType(motorConfigurationType);
+            motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         }
 
         if (RUN_USING_ENCODER && MOTOR_VELO_PID != null) {

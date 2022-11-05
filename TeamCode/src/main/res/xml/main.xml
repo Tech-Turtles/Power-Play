@@ -2,19 +2,21 @@
 <Robot type="FirstInspires-FTC">
     <LynxUsbDevice name="Expansion Hub Portal 1" serialNumber="(embedded)" parentModuleAddress="173">
         <LynxModule name="Expansion Hub 173" port="173">
+<!--            <LynxEmbeddedIMU            name="IMU_2"        port="0" bus="0" />-->
+            <goBILDA5202SeriesMotor     name="turret"       port="0" />
+            <goBILDA5202SeriesMotor     name="slide left"   port="1" />
+            <goBILDA5202SeriesMotor     name="slide right"  port="2" />
+            <Servo                      name="arm left"     port="0"/>
+            <Servo                      name="arm right"    port="1"/>
+            <ContinuousRotationServo    name="intake close" port="2"/>
+            <ContinuousRotationServo    name="intake far"   port="3"/>
+        </LynxModule>
+        <LynxModule name="Expansion Hub 2" port="2">
             <LynxEmbeddedIMU            name="IMU_1"        port="0" bus="0" />
             <goBILDA5202SeriesMotor     name="front left"   port="0" />
             <goBILDA5202SeriesMotor     name="back left"    port="1" />
             <goBILDA5202SeriesMotor     name="back right"   port="2" />
             <goBILDA5202SeriesMotor     name="front right"  port="3" />
-        </LynxModule>
-        <LynxModule name="Expansion Hub 2" port="2">
-<!--            <LynxEmbeddedIMU        name="IMU_2"    port="0" bus="0" />-->
-            <goBILDA5202SeriesMotor     name="turret"  port="0" />
-            <Servo                      name="arm left" port="0"/>
-            <Servo                      name="arm right" port="1"/>
-            <ContinuousRotationServo    name="intake close" port="2"/>
-            <ContinuousRotationServo    name="intake far" port="3"/>
         </LynxModule>
     </LynxUsbDevice>
     <Webcam name="vision" serialNumber="CD449F1F" />

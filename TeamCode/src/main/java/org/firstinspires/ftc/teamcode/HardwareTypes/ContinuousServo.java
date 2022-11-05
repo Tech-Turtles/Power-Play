@@ -4,7 +4,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 public enum ContinuousServo {
 
-    ;
+    CLOSE_INTAKE("intake close", DcMotorSimple.Direction.FORWARD, ServoTypes.INDEPENDENT),
+    FAR_INTAKE("intake far", DcMotorSimple.Direction.FORWARD, ServoTypes.INDEPENDENT);
 
     private final String configName;
     private final DcMotorSimple.Direction direction;

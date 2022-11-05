@@ -5,9 +5,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 public enum Servos {
 
     LEFT_ARM("arm left", Servo.Direction.FORWARD, ServoTypes.LINKED),
-    RIGHT_ARM("arm right", Servo.Direction.REVERSE, ServoTypes.LINKED),
-    CLOSE_INTAKE("intake lose", Servo.Direction.REVERSE, ServoTypes.INDEPENDENT),
-    FAR_INTAKE("intake far", Servo.Direction.FORWARD, ServoTypes.INDEPENDENT);
+    RIGHT_ARM("arm right", Servo.Direction.REVERSE, ServoTypes.LINKED);
 
     private final String configName;
     private final Servo.Direction direction;

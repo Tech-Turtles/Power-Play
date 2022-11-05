@@ -43,6 +43,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     public void update() {
         stateMachine.update();
         Pose2d poseEstimate = autoOpmode.mecanumDrive.getPoseEstimate();
+        autoOpmode.telemetry.addData("Tag", autoOpmode.tagOfInterest.id);
         autoOpmode.telemetry.addData("X:        ", df.format(poseEstimate.getX()));
         autoOpmode.telemetry.addData("Y:        ", df.format(poseEstimate.getY()));
         autoOpmode.telemetry.addData("Heading:  ", df.format(Math.toDegrees(poseEstimate.getHeading())));
@@ -95,26 +96,25 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
      * Next State:
      */
     class Scan extends Executive.StateBase<AutoOpmode> {
-        boolean visionInitialized = false;
 
         @Override
         public void update() {
             super.update();
 
-            if(!visionInitialized)
-                initializeVision();
-            else
-                signal = opMode.visionDetection.getPipeline().getSignalColor();
+            switch (autoOpmode.tagOfInterest.id) {
+                case 1:
+                    signal = Signal.GREEN;
+                    break;
+                case 2:
+                    signal = Signal.BLUE;
+                    break;
+                case 3:
+                    signal = Signal.YELLOW;
+                    break;
+            }
 
             if(!signal.equals(Signal.NONE) || stateTimer.seconds() > visionTimeout)
                 nextState(DRIVE, new StartToSignalPark());
-        }
-
-        private void initializeVision() {
-            if(opMode.visionDetection != null && opMode.visionDetection.getPipeline() != null) {
-                opMode.visionDetection.getPipeline().setTrackType(TrackType.SLEEVE);
-                visionInitialized = true;
-            }
         }
     }
 

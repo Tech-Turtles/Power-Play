@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.Utility.Roadrunner.drive.opmode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.util.Angle;
@@ -22,7 +23,7 @@ import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
  * this procedure a few times and averages the values for additional accuracy. Note: a relatively
  * accurate track width estimate is important or else the angular constraints will be thrown off.
  */
-@Disabled
+@Config
 @Autonomous(group = "drive")
 public class TrackWidthTuner extends LinearOpMode {
     public static double ANGLE = 180; // deg

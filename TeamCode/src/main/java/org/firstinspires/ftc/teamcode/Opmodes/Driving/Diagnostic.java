@@ -26,7 +26,6 @@ public class Diagnostic extends Manual {
     @Override
     public void init() {
         super.init();
-        imuUtil = new IMUUtilities(this, IMU.IMU1.getName(), IMUUtilities.ImuMode.FAST_HEADING_ONLY);
         telemetry.addLine("\n----Diagnostic Initialized----");
     }
 
@@ -66,11 +65,6 @@ public class Diagnostic extends Manual {
 
         telemetry.addData("Period Average: ", df_precise.format(period.getAveragePeriodSec()) + "s");
         telemetry.addData("Period Max:     ", df_precise.format(period.getMaxPeriodSec()) + "s");
-
-        if(imuUtil.imu != null) {
-            imuUtil.updateNow();
-            imuUtil.displayTelemetry();
-        }
     }
 
     @Override
