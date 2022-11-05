@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.Opmodes.Autonomous;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
+import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Utility.*;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.StartPosition;
@@ -42,7 +43,7 @@ public class AutoOpmode extends RobotHardware {
     public static class AutoRedBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
-            robotStartPos = StartPosition.FAR;
+            robotStartPos = StartPosition.AUDIENCE;
             super.init();
         }
     }
@@ -51,7 +52,7 @@ public class AutoOpmode extends RobotHardware {
     public static class AutoBluePickup extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
-            robotStartPos = StartPosition.FAR;
+            robotStartPos = StartPosition.AUDIENCE;
             super.init();
         }
     }
@@ -136,6 +137,9 @@ public class AutoOpmode extends RobotHardware {
             }
 
         }
+
+        servoUtility.setAngle(Servos.LEFT_ARM, Configuration.ServoPosition.START.getLeft());
+        servoUtility.setAngle(Servos.RIGHT_ARM, Configuration.ServoPosition.START.getRight());
 
         telemetry.update();
     }

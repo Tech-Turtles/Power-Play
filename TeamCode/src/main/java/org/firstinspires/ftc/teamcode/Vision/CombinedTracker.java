@@ -106,13 +106,6 @@ public class CombinedTracker extends OpenCvPipeline {
     private final double cx = 319.803;
     private final double cy = 241.251;
 
-    // Tag ID 1,2,3 from the 36h11 family
-    private final int LEFT = 1;
-    private final int MIDDLE = 2;
-    private final int RIGHT = 3;
-
-    private AprilTagDetection tagOfInterest = null;
-
     // UNITS ARE METERS
     private final double tagsize = 0.166;
     private double tagsizeX;
@@ -251,7 +244,6 @@ public class CombinedTracker extends OpenCvPipeline {
                 Imgproc.putText(input, "Pole", new Point(poleRect.x, poleRect.y < 10 ? (poleRect.y+poleRect.height+20) : (poleRect.y - 8)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
             }
         }
-
 
         Imgproc.line(input, new Point(0,horizon), new Point(640, horizon), HORIZON_COLOR);
 

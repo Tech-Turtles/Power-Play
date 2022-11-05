@@ -23,8 +23,7 @@ import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateM
 @Config
 @TeleOp(name="Manual", group="A")
 public class Manual extends RobotHardware {
-
-    public static double driveSpeed = 1.0;
+    
     public static double precisionMode = 1.0;
     public static double precisionPercentage = 0.35;
     public static double linearSpeed = 0.75;
@@ -70,6 +69,8 @@ public class Manual extends RobotHardware {
         trajectoryRR = new TrajectoryRR(this.mecanumDrive);
 
         motorUtility.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(1, 0, 0, 12), Motors.SLIDE_LEFT, Motors.SLIDE_RIGHT);
+
+        setpoint = 0.0;
     }
 
     @Override
@@ -84,7 +85,7 @@ public class Manual extends RobotHardware {
 //        mecanumDrive.setPoseEstimate(new Pose2d(-72+8.5,0));
         mecanumDrive.setPoseEstimate(new Pose2d());
         pidController.init(0.005, 0.0, 0.0);
-        hasStarted = false;
+        hasStarted = true;
         stateMachine.removeStateByType(INTAKE);
     }
 
@@ -132,11 +133,8 @@ public class Manual extends RobotHardware {
                     break;
             }
 
-            if(currentDriveMode != DriveMode.NORMAL_FIELD_CENTRIC && Math.abs(primary.right_stick_x) > 0.1) {
-                currentDriveMode = DriveMode.NORMAL_ROBOT_CENTRIC;
-            }
             // Prevent slides from being powered if they are at a zero-like position.
-            if(setpoint > 10.0) {
+            if(setpoint > 30.0) {
                 motorUtility.setPower(Motors.SLIDE_LEFT, (motorUtility.getEncoderValue(Motors.SLIDE_LEFT) > setpoint + 15 ? reverseScale : 0.75) * pidController.update(setpoint, motorUtility.getEncoderValue(Motors.SLIDE_LEFT), statePeriod.seconds()));
                 motorUtility.setPower(Motors.SLIDE_RIGHT, (motorUtility.getEncoderValue(Motors.SLIDE_RIGHT) > setpoint + 15 ? reverseScale : 0.75) * pidController.update(setpoint, motorUtility.getEncoderValue(Motors.SLIDE_RIGHT), statePeriod.seconds()));
             }
@@ -189,7 +187,7 @@ public class Manual extends RobotHardware {
                         armPosition = Configuration.ServoPosition.INTAKE;
                 }
                 stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
-            } else if(secondary.leftBumperOnce() && (!armPosition.equals(Configuration.ServoPosition.HOLD) || armPosition.equals(Configuration.ServoPosition.START))) {
+            } else if(secondary.leftBumperOnce() && !armPosition.equals(Configuration.ServoPosition.HOLD)) {
                 switch (armPosition) {
                     case INTERMEDIARY:
                         armPosition = Configuration.ServoPosition.HOLD;
@@ -262,7 +260,6 @@ public class Manual extends RobotHardware {
         telemetry.addData("Heading:             ", df.format(Math.toDegrees(poseEstimate.getHeading())));
         if(packet != null) {
             packet.put("Precision mode:      ", df.format(precisionMode));
-            packet.put("Drive speed:         ", df.format(driveSpeed));
             packet.put("Precision speed:     ", df.format(precisionPercentage));
             packet.put("Loop time:           ", df_precise.format(period.getAveragePeriodSec()) + "s");
         }
