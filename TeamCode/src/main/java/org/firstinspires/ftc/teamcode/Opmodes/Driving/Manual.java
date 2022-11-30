@@ -1,5 +1,11 @@
 package org.firstinspires.ftc.teamcode.Opmodes.Driving;
 
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.DRIVE;
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.TURRET;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_CLOSED;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_OPEN;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
@@ -8,16 +14,15 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.HardwareTypes.ContinuousServo;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
-import org.firstinspires.ftc.teamcode.Utility.*;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.TrajectoryRR;
+import org.firstinspires.ftc.teamcode.Utility.Configuration;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Utility.PIDController;
+import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 import org.opencv.core.Rect;
-
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.*;
 
 
 @Config
@@ -26,17 +31,16 @@ public class Manual extends RobotHardware {
     
     public static double precisionMode = 1.0;
     public static double precisionPercentage = 0.35;
+    public static double clawGrab = CLAW_OPEN;
     public static double linearSpeed = 0.75;
     public static double lateralSpeed = 0.75;
     public static double rotationSpeed = 1.0;
     public static double turretSpeed = 0.8;
     public static double slideMultiplier = 8.0;
-    public static double turretMultiplier = 1.5;
+    public static double turretMultiplier = 1.0;
     public static double reverseScale = 0.1;
 
-    public boolean hasStarted = false;
-
-    public static Configuration.ServoPosition armPosition = Configuration.ServoPosition.START;
+    public static Configuration.ServoPosition armPosition = Configuration.ServoPosition.HOLD;
 
     private final PIDController pidController = new PIDController();
     public double setpoint = 0.0;
@@ -59,10 +63,9 @@ public class Manual extends RobotHardware {
     @Override
     public void init() {
         super.init();
-        hasStarted = false;
-        stateMachine.changeState(DRIVE, new Drive_Manual());
-        stateMachine.changeState(TURRET, new Turret_Stop());
-        stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(Configuration.ServoPosition.START));
+        armPosition = Configuration.ServoPosition.HOLD;
+
+        stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
         stateMachine.init();
 
         mecanumDrive = new SampleMecanumDrive(hardwareMap, this);
@@ -82,11 +85,10 @@ public class Manual extends RobotHardware {
     @Override
     public void start() {
         super.start();
-//        mecanumDrive.setPoseEstimate(new Pose2d(-72+8.5,0));
         mecanumDrive.setPoseEstimate(new Pose2d());
         pidController.init(0.005, 0.0, 0.0);
-        hasStarted = true;
-        stateMachine.removeStateByType(INTAKE);
+        stateMachine.changeState(DRIVE, new Drive_Manual());
+        stateMachine.changeState(TURRET, new Turret_Manual());
     }
 
     @Override
@@ -104,9 +106,8 @@ public class Manual extends RobotHardware {
             Pose2d poseEstimate = mecanumDrive.getPoseEstimate();
             Pose2d driveDirection = new Pose2d();
 
-            if(opMode.primary.AOnce()) {
+            if(primary.AOnce())
                 precisionMode = precisionMode == 1 ? precisionPercentage : 1;
-            }
 
             if(primary.BOnce())
                 currentDriveMode = currentDriveMode == DriveMode.NORMAL_ROBOT_CENTRIC ? DriveMode.NORMAL_FIELD_CENTRIC : DriveMode.NORMAL_ROBOT_CENTRIC;
@@ -143,27 +144,18 @@ public class Manual extends RobotHardware {
 
             if(primary.X() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Cone_Align.class)) {
                 stateMachine.changeState(TURRET, new Turret_Cone_Align());
-            } else if(!stateMachine.getCurrentStateByType(TURRET).equals(Turret_Stop.class) && !primary.X()) {
-                stateMachine.changeState(TURRET, new Turret_Stop());
+            } else if(!stateMachine.getCurrentStateByType(TURRET).equals(Turret_Manual.class) && !primary.X()) {
+                stateMachine.changeState(TURRET, new Turret_Manual());
             }
 
-            if(secondary.left_trigger > Configuration.deadzone) {
-                servoUtility.setPower(ContinuousServo.CLOSE_INTAKE, 1.0);
-                servoUtility.setPower(ContinuousServo.FAR_INTAKE, 1.0);
-            } else if(secondary.right_trigger > Configuration.deadzone) {
-                servoUtility.setPower(ContinuousServo.CLOSE_INTAKE, -1.0);
-                servoUtility.setPower(ContinuousServo.FAR_INTAKE, -1.0);
-            } else if(!armPosition.equals(Configuration.ServoPosition.HOLD) && hasStarted) {
-                servoUtility.setPower(ContinuousServo.CLOSE_INTAKE, 0.5);
-                servoUtility.setPower(ContinuousServo.FAR_INTAKE, 0.5);
-            } else {
-                servoUtility.setPower(ContinuousServo.CLOSE_INTAKE, 0.0);
-                servoUtility.setPower(ContinuousServo.FAR_INTAKE, 0.0);
-            }
+            if(secondary.rightTriggerOnce())
+                clawGrab = clawGrab == CLAW_CLOSED ? CLAW_OPEN : CLAW_CLOSED;
 
-            motorUtility.setPower(Motors.TURRET, secondary.left_stick_x * turretSpeed);
+            servoUtility.setAngle(Servos.CLAW, clawGrab);
 
             setpoint += -secondary.right_stick_y * slideMultiplier;
+
+
 
             if(secondary.AOnce()) {
                 setpoint = Configuration.INTAKE_POS;
@@ -237,17 +229,17 @@ public class Manual extends RobotHardware {
             if(coneCenter > 318.0 && coneCenter < 322.0)
                 return 0.0;
 
-            double direction = coneCenter < 300.0 ? -1.0 : 1.0;
+            double direction = coneCenter < 300.0 ? 1.0 : -1.0;
             double turn = Math.abs(coneCenter - 320) / 320.0;
             return Range.clip(turn * turretMultiplier, 0.0, 1.0) * direction;
         }
     }
 
-    class Turret_Stop extends Executive.StateBase<Manual> {
+    class Turret_Manual extends Executive.StateBase<Manual> {
         @Override
         public void init(Executive.StateMachine<Manual> stateMachine) {
             super.init(stateMachine);
-            motorUtility.setPower(Motors.TURRET, 0.0);
+            motorUtility.setPower(Motors.TURRET, -secondary.left_stick_x * turretSpeed);
         }
     }
 

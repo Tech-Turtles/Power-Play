@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.Utility.Odometry.DeadWheels;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.localization.ThreeTrackingWheelLocalizer;
 
@@ -11,8 +13,6 @@ import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 
 import java.util.Arrays;
 import java.util.List;
-
-import androidx.annotation.NonNull;
 
 /*
  * Sample tracking wheel localizer implementation assuming the standard configuration:

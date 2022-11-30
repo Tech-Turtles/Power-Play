@@ -3,9 +3,9 @@ package org.firstinspires.ftc.teamcode.Menu;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-
-import org.firstinspires.ftc.teamcode.Utility.*;
+import org.firstinspires.ftc.teamcode.Utility.Controller;
 import org.firstinspires.ftc.teamcode.Utility.Math.ElapsedTimer;
+import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 
 public class InteractiveInitialization {
 

@@ -1,18 +1,19 @@
 package org.firstinspires.ftc.teamcode.HardwareTypes;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotor.*;
+import com.qualcomm.robotcore.hardware.DcMotor.RunMode;
+import com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 public enum Motors {
 
-    FRONT_LEFT( "front left",   ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER),
-    FRONT_RIGHT("front right",  ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER),
-    BACK_LEFT(  "back left",    ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER),
-    BACK_RIGHT( "back right",   ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER),
-    TURRET("turret", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER),
-    SLIDE_LEFT("slide left", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER),
-    SLIDE_RIGHT("slide right", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER);
+    FRONT_LEFT( "front left",   ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_WITHOUT_ENCODER),
+    FRONT_RIGHT("front right",  ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_WITHOUT_ENCODER),
+    BACK_LEFT(  "back left",    ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_WITHOUT_ENCODER),
+    BACK_RIGHT( "back right",   ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_WITHOUT_ENCODER),
+    TURRET("turret", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER),
+    SLIDE_LEFT("slide left", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER),
+    SLIDE_RIGHT("slide right", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER);
     
     private final String configName;
     private final ExpansionHubs expansionHub;

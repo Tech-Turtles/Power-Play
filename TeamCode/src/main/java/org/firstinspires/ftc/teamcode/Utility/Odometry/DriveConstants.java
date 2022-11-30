@@ -31,7 +31,7 @@ public class DriveConstants {
      * If using the built-in motor velocity PID, update MOTOR_VELO_PID with the tuned coefficients
      * from DriveVelocityPIDTuner.
      */
-    public static final boolean RUN_USING_ENCODER = true;
+    public static final boolean RUN_USING_ENCODER = false;
     public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(15, 0, 2, 17);
 
     /*
@@ -44,17 +44,7 @@ public class DriveConstants {
      */
     public static double WHEEL_RADIUS = 1.87570478; // in
     public static double GEAR_RATIO = 1; // output (wheel) speed / input (motor) speed
-    public static double TRACK_WIDTH = 14.9; // in
-
-    /*
-     * These are the feedforward parameters used to model the drive motor behavior. If you are using
-     * the built-in velocity PID, *these values are fine as is*. However, if you do not have drive
-     * motor encoders or have elected not to use them for velocity control, these values should be
-     * empirically tuned.
-     */
-    public static double kV = 1.0 / rpmToVelocity(MAX_RPM);
-    public static double kA = 0;
-    public static double kStatic = 0;
+    public static double TRACK_WIDTH = 16.65; // in
 
     /*
      * These values are used to generate the trajectories for you robot. To ensure proper operation,
@@ -67,11 +57,21 @@ public class DriveConstants {
     //ToDo Increase velocity and see if it negatively effects performance.
     public static double MAX_VEL = ((MAX_RPM / 60) * GEAR_RATIO * WHEEL_RADIUS * (2 * Math.PI)) * 0.80;
     //ToDo Increase Acceleration until it causes issues.
-    public static double MAX_ACCEL = 30;
+    public static double MAX_ACCEL = 45;
     //ToDo Increase Angle Velocity.
     public static double MAX_ANG_VEL = Math.toRadians(180);
     //ToDo Increase Angle Acceleration.
     public static double MAX_ANG_ACCEL = Math.toRadians(180);
+
+    /*
+     * These are the feedforward parameters used to model the drive motor behavior. If you are using
+     * the built-in velocity PID, *these values are fine as is*. However, if you do not have drive
+     * motor encoders or have elected not to use them for velocity control, these values should be
+     * empirically tuned.
+     */
+    public static double kV = 0.013;
+    public static double kA = 0.0033;
+    public static double kStatic = 0.01;
 
 
     public static double encoderTicksToInches(double ticks) {

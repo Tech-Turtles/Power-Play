@@ -156,6 +156,7 @@ public class CombinedTracker extends OpenCvPipeline {
         {
             detectionsUpdate = detections;
         }
+        //ToDo re-implement this
 
         // For fun, use OpenCV to draw 6DOF markers on the image. We actually recompute the pose using
         // OpenCV because I haven't yet figured out how to re-use AprilTag's pose in OpenCV.
@@ -254,6 +255,10 @@ public class CombinedTracker extends OpenCvPipeline {
         return input;
     }
 
+    /**
+     * Use color for signal sleeve detection
+     */
+    @Deprecated
     private Mat detectSleeve(Mat input) {
         Imgproc.cvtColor(input, hsvMat, Imgproc.COLOR_RGB2HSV);
         Imgproc.erode(hsvMat, hsvMat, kernel);
@@ -279,15 +284,15 @@ public class CombinedTracker extends OpenCvPipeline {
 
         // Check what contour has the largest area.
         if(possibleSignals.get(0).area() > possibleSignals.get(1).area() && possibleSignals.get(0).area() > possibleSignals.get(2).area()) {
-            signalColor = Signal.GREEN;
+            signalColor = Signal.LEFT;
             Imgproc.rectangle(input, possibleSignals.get(0), CONTOUR_COLOR);
             Imgproc.putText(input, "Green", new Point(possibleSignals.get(0).x, wrapText(0)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else if(possibleSignals.get(1).area() > possibleSignals.get(2).area()) {
-            signalColor = Signal.YELLOW;
+            signalColor = Signal.RIGHT;
             Imgproc.rectangle(input, possibleSignals.get(1), CONTOUR_COLOR);
             Imgproc.putText(input, "Yellow", new Point(possibleSignals.get(1).x, wrapText(1)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else if(possibleSignals.get(2).area() > 1) {
-            signalColor = Signal.BLUE;
+            signalColor = Signal.MIDDLE;
             Imgproc.rectangle(input, possibleSignals.get(2), CONTOUR_COLOR);
             Imgproc.putText(input, "Blue", new Point(possibleSignals.get(2).x, wrapText(2)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else
@@ -329,6 +334,9 @@ public class CombinedTracker extends OpenCvPipeline {
     }
 
     public Rect getBiggestCone() {
+        if(trackType.equals(TrackType.POLE)) {
+            return poleRect;
+        }
         return coneColor.equals(DETECT_COLOR.RED) ? redRect : blueRect;
     }
 

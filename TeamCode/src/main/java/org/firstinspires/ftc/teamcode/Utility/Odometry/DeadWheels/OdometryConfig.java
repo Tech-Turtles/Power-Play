@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.Utility.Odometry.DeadWheels;
 
 import com.acmerobotics.dashboard.config.Config;
 
-import org.firstinspires.ftc.teamcode.Utility.Mecanum.MecanumNavigation.*;
+import org.firstinspires.ftc.teamcode.Utility.Mecanum.MecanumNavigation.Navigation2D;
 
 @Config
 public class OdometryConfig {

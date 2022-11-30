@@ -13,7 +13,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.PwmControl;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.Range;
 
@@ -30,7 +31,6 @@ import org.firstinspires.ftc.teamcode.HardwareTypes.Webcam;
 import org.firstinspires.ftc.teamcode.Utility.Math.ElapsedTimer;
 import org.firstinspires.ftc.teamcode.Utility.Mecanum.AutoDrive;
 import org.firstinspires.ftc.teamcode.Utility.Mecanum.Mecanum;
-import org.firstinspires.ftc.teamcode.Utility.Odometry.IMUUtilities;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.Vision.CombinedDetector;
 
@@ -44,7 +44,7 @@ import java.util.HashMap;
 public class RobotHardware extends OpMode {
     // Hashmaps to store the hardware object with the key being the enum values.
     private final HashMap<Motors, DcMotorEx> motors = new HashMap<>();
-    private final HashMap<Servos, Servo> servos = new HashMap<>();
+    private final HashMap<Servos, ServoImplEx> servos = new HashMap<>();
     private final HashMap<ContinuousServo, CRServo> crServos = new HashMap<>();
     private final HashMap<ColorSensor, RevColorSensorV3> colorSensors = new HashMap<>();
     // Utility objects to access hardware methods.
@@ -53,7 +53,6 @@ public class RobotHardware extends OpMode {
     // Decimal format objects for easy string formatting.
     public static final DecimalFormat df = new DecimalFormat("0.00"), df_precise = new DecimalFormat("0.0000");
     // Hub & hub sensor objects.
-    public IMUUtilities imuUtil;
     public VoltageSensor batteryVoltageSensor;
     protected LynxModule expansionHub1, expansionHub2;
     // Timer to keep track of the period & period mean times.
@@ -274,10 +273,10 @@ public class RobotHardware extends OpMode {
     }
 
     public class ServoUtility {
-        Servo s;
+        ServoImplEx s;
         CRServo cr;
 
-        private Servo getServo(Servos servo) {
+        private ServoImplEx getServo(Servos servo) {
             s = servos.get(servo);
             if (s == null && packet != null)
                 packet.addLine("Servo Missing: " + servo.name());
@@ -367,10 +366,15 @@ public class RobotHardware extends OpMode {
     public void clearHubCache() {
         try {
             expansionHub1.clearBulkCache();
+        } catch (Exception e) {
+            if(packet != null)
+                packet.addLine("Error: " + e.getMessage());
+        }
+        try {
             expansionHub2.clearBulkCache();
         } catch (Exception e) {
             if(packet != null)
-                packet.put("Error: ", e.getMessage());
+                packet.addLine("Error: " + e.getMessage());
         }
     }
 
@@ -414,9 +418,10 @@ public class RobotHardware extends OpMode {
 
         for (Servos s : Servos.values()) {
             try {
-                Servo servo = hardwareMap.get(Servo.class, s.getConfigName());
+                ServoImplEx servo = hardwareMap.get(ServoImplEx.class, s.getConfigName());
                 servos.put(s, servo);
                 servo.setDirection(s.getDirection());
+                servo.setPwmRange(new PwmControl.PwmRange(510, 2490));
             } catch (IllegalArgumentException ignore) {}
         }
 

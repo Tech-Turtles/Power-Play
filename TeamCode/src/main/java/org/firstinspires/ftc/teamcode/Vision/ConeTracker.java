@@ -1,17 +1,15 @@
 package org.firstinspires.ftc.teamcode.Vision;
 
+import static org.opencv.core.Core.inRange;
+
 import com.acmerobotics.dashboard.config.Config;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.Opmodes.Driving.Vision;
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvPipeline;
 
@@ -19,9 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
-import static org.opencv.core.Core.inRange;
-import static org.opencv.imgproc.Imgproc.COLOR_BGR2HSV;
 
 @Config
 public class ConeTracker extends OpenCvPipeline {

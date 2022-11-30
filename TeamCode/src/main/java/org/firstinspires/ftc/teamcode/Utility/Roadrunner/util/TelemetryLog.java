@@ -2,14 +2,11 @@ package org.firstinspires.ftc.teamcode.Utility.Roadrunner.util;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.HardwareTypes.ColorSensor;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
 import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 
 import java.io.Serializable;
 import java.util.EnumMap;
-import java.util.HashMap;
 
 public class TelemetryLog implements Serializable {
     private double time;

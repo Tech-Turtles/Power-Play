@@ -1,12 +1,12 @@
 package org.firstinspires.ftc.teamcode.Utility.Math;
 
+import static org.firstinspires.ftc.teamcode.Utility.Math.ListMath.average;
+
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static org.firstinspires.ftc.teamcode.Utility.Math.ListMath.average;
 
 public class ElapsedTimer extends ElapsedTime {
 
@@ -22,13 +22,13 @@ public class ElapsedTimer extends ElapsedTime {
         this.historyLength = historyLength;
     }
 
-    public double updatePeriodTime(){
+    public void updatePeriodTime(){
         pastPeriods.add(period.seconds());
         period.reset();
         if (pastPeriods.size()>= 200) {
             pastPeriods.remove(0);
         }
-        return average(pastPeriods);
+        average(pastPeriods);
     }
 
     public double getAveragePeriodSec() {

@@ -4,7 +4,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Webcam;
 import org.firstinspires.ftc.teamcode.Vision.AprilTagDetector;
-import org.firstinspires.ftc.teamcode.Vision.CombinedDetector;
 import org.openftc.apriltag.AprilTagDetection;
 
 import java.util.ArrayList;
