@@ -2,7 +2,8 @@ package org.firstinspires.ftc.teamcode.HardwareTypes;
 
 public enum Webcam {
 
-    VISION("vision"),
+    VISION_RIGHT("vision right"),
+    VISION_LEFT("vision left"),
     REALSENSE("realsense");
 
     final String name;

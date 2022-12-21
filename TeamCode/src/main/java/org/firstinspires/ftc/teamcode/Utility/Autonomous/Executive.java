@@ -180,6 +180,7 @@ public class Executive {
             stateTimer = new ElapsedTime();
             statePeriod = new ElapsedTime();
             timer = new ElapsedTime();
+            isDone = false;
             initialized = true;
             timer.reset();
             stateTimer.reset();

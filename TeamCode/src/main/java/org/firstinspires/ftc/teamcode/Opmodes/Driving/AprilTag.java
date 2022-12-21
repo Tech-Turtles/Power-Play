@@ -85,7 +85,7 @@ public class AprilTag extends Manual {
     }
 
     private void loadVisionPipeline() {
-        tagDetector = new AprilTagDetector(hardwareMap, Webcam.VISION.getName());
+        tagDetector = new AprilTagDetector(hardwareMap, Webcam.VISION_RIGHT.getName());
         tagDetector.init();
     }
 }

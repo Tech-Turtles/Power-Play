@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.Opmodes.Autonomous;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
@@ -34,29 +35,33 @@ public class AutoOpmode extends RobotHardware {
         @Override public void init() {
             robotColor = AllianceColor.RED;
             robotStartPos = StartPosition.AUDIENCE;
+            RobotStateContext.blue = false;
             super.init();
         }
     }
 
-    @Autonomous(name="Red Right", group="A")
+    @Autonomous(name="Official Blue Left", group="A")
     public static class AutoRedBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
             robotStartPos = StartPosition.AUDIENCE;
+            RobotStateContext.blue = true;
             super.init();
         }
     }
 
-    @Autonomous(name="Blue Left", group="A")
+    @Autonomous(name="Blue Left", group="B")
+    @Disabled
     public static class AutoBluePickup extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
-            robotStartPos = StartPosition.AUDIENCE;
+            robotStartPos = StartPosition.FAR;
             super.init();
         }
     }
 
-    @Autonomous(name="Blue Right", group="A")
+    @Autonomous(name="Blue Right", group="B")
+    @Disabled
     public static class AutoBlueBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
@@ -81,14 +86,14 @@ public class AutoOpmode extends RobotHardware {
     public void init_loop() {
         super.init_loop();
         primary.update();
-        if(visionDetection == null || visionDetection.getPipeline() == null)
+        if(visionDetection == null || visionDetection.getLeftPipeline() == null)
             return;
         if(!visionInitialized) {
-            visionDetection.getPipeline().setTrackType(TrackType.SLEEVE);
+            visionDetection.getLeftPipeline().setTrackType(TrackType.SLEEVE);
             visionInitialized = true;
         }
 
-        ArrayList<AprilTagDetection> currentDetections = visionDetection.getPipeline().getLatestDetections();
+        ArrayList<AprilTagDetection> currentDetections = visionDetection.getLeftPipeline().getLatestDetections();
         if(currentDetections.size() != 0)
         {
             boolean tagFound = false;

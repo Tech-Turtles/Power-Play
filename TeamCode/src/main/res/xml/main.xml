@@ -18,5 +18,6 @@
             <goBILDA5202SeriesMotor     name="front right"  port="3" />
         </LynxModule>
     </LynxUsbDevice>
-    <Webcam name="vision" serialNumber="CD449F1F" />
+    <Webcam name="vision right" serialNumber="CD449F1F" />
+    <Webcam name="vision left" serialNumber="E0FDD07F" />
 </Robot>

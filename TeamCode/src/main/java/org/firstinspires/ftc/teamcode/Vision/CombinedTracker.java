@@ -30,23 +30,24 @@ import java.util.List;
 @Config
 public class CombinedTracker extends OpenCvPipeline {
 
-    public TrackType trackType = TrackType.SLEEVE;
+    public static TrackType trackType = TrackType.SLEEVE;
 
     public double CONTOUR_AREA = 250.0;
     private final Scalar CONTOUR_COLOR = new Scalar(255,0,255);
     private final Scalar HORIZON_COLOR = new Scalar(0,255,0);
     private final Scalar TEXT_COLOR = new Scalar(0, 0, 0);
+    private int contourIndex = 0;
 
-    enum DETECT_COLOR {
+    public enum DETECT_COLOR {
         RED,
         BLUE,
         BOTH
     }
 
-    public DETECT_COLOR coneColor = DETECT_COLOR.RED;
+    public static DETECT_COLOR coneColor = DETECT_COLOR.RED;
     private Signal signalColor = Signal.NONE;
 
-    public double horizon = 100;
+    public double horizon = 5;
 
     private Rect redRect = new Rect();
     private Rect blueRect = new Rect();
@@ -58,13 +59,13 @@ public class CombinedTracker extends OpenCvPipeline {
     private final ArrayList<MatOfPoint> contours = new ArrayList<>();
     private final ArrayList<Rect> possibleSignals = new ArrayList<>();
     // Cone mask scalars
-    private final Scalar redLow = new Scalar(0, 161, 60);
-    private final Scalar redHigh = new Scalar(200, 255, 255);
-    private final Scalar blueLow = new Scalar(0, 80, 138);
-    private final Scalar blueHigh = new Scalar(100, 255, 255);
+    private final Scalar redLow = new Scalar(0, 170, 60);
+    private final Scalar redHigh = new Scalar(80, 255, 255);
+    private final Scalar blueLow = new Scalar(0, 61, 138);
+    private final Scalar blueHigh = new Scalar(61, 255, 255);
     // Pole mask scalars
-    public Scalar poleLower = new Scalar(59, 134, 48);
-    public Scalar poleHigher = new Scalar(180, 180, 105);
+    public Scalar poleLower = new Scalar(60, 135, 10);
+    public Scalar poleHigher = new Scalar(190, 180, 105);
     // Signal sleeve mask scalars
     private final Scalar greenLower = new Scalar(32, 10, 75);
     private final Scalar greenUpper = new Scalar(86, 255,255);
@@ -186,12 +187,17 @@ public class CombinedTracker extends OpenCvPipeline {
             Imgproc.drawContours(input, redContours, -1, CONTOUR_COLOR);
 
             if(!redContours.isEmpty()) {
-                MatOfPoint biggestRedContour = Collections.max(redContours, Comparator.comparingDouble(t0 -> Imgproc.boundingRect(t0).width));
+                redContours.sort(Collections.reverseOrder(Comparator.comparingDouble(t0 -> Imgproc.boundingRect(t0).width)));
+                MatOfPoint biggestRedContour = redContours.get(0);
+                try {
+                    biggestRedContour = redContours.get(contourIndex);
+                } catch (IndexOutOfBoundsException ignore) {}
                 if(Imgproc.contourArea(biggestRedContour) > CONTOUR_AREA) {
                     redRect = Imgproc.boundingRect(biggestRedContour);
 
                     Imgproc.rectangle(input, redRect, CONTOUR_COLOR, 2);
                     Imgproc.putText(input, "Red Cone", new Point(redRect.x, redRect.y < 10 ? (redRect.y+redRect.height+20) : (redRect.y - 8)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 1);
+                    Imgproc.circle(input, new Point(redRect.x + (redRect.width/2.0), redRect.y + (redRect.height/2.0)), 3, HORIZON_COLOR, 3);
                 }
             }
 
@@ -208,12 +214,17 @@ public class CombinedTracker extends OpenCvPipeline {
             Imgproc.drawContours(input, blueContours, -1, CONTOUR_COLOR);
 
             if(!blueContours.isEmpty()) {
-                MatOfPoint biggestBlueContour = Collections.max(blueContours, Comparator.comparingDouble(t0 -> Imgproc.boundingRect(t0).width));
+                blueContours.sort(Collections.reverseOrder(Comparator.comparingDouble(t0 -> Imgproc.boundingRect(t0).width)));
+                MatOfPoint biggestBlueContour = blueContours.get(0);
+                try {
+                    biggestBlueContour = blueContours.get(contourIndex);
+                } catch (IndexOutOfBoundsException ignore) {}
                 if(Imgproc.contourArea(biggestBlueContour) > CONTOUR_AREA) {
                     blueRect = Imgproc.boundingRect(biggestBlueContour);
 
                     Imgproc.rectangle(input, blueRect, CONTOUR_COLOR, 2);
                     Imgproc.putText(input, "Blue Cone", new Point(blueRect.x, blueRect.y < 10 ? (blueRect.y+blueRect.height+20) : (blueRect.y - 8)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 1);
+                    Imgproc.circle(input, new Point(blueRect.x + (blueRect.width/2.0), blueRect.y + (blueRect.height/2.0)), 3, HORIZON_COLOR, 3);
                 }
             }
             maskBlue.release();
@@ -242,11 +253,14 @@ public class CombinedTracker extends OpenCvPipeline {
                 poleRect = Imgproc.boundingRect(biggestPole);
 
                 Imgproc.rectangle(input, poleRect, CONTOUR_COLOR, 2);
-                Imgproc.putText(input, "Pole", new Point(poleRect.x, poleRect.y < 10 ? (poleRect.y+poleRect.height+20) : (poleRect.y - 8)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
+                Imgproc.putText(input, "Pole " + (poleRect.x + (poleRect.width/2.0)) +","+(poleRect.y + (poleRect.height/2.0)), new Point(poleRect.x, poleRect.y < 10 ? (poleRect.y+poleRect.height+20) : (poleRect.y - 8)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
+                Imgproc.circle(input, new Point(poleRect.x + (poleRect.width/2.0), poleRect.y + (poleRect.height/2.0)), 3, HORIZON_COLOR, 3);
             }
         }
 
         Imgproc.line(input, new Point(0,horizon), new Point(640, horizon), HORIZON_COLOR);
+        Imgproc.circle(input, new Point(320, 240), 3, HORIZON_COLOR, 3);
+//        Imgproc.line(input, new Point(320, 240), new Point(poleRect.x + (poleRect.width/2.0), poleRect.y + (poleRect.height/2.0)), HORIZON_COLOR, 2);
 
         contours.clear();
         yCrCb.release();
@@ -324,13 +338,12 @@ public class CombinedTracker extends OpenCvPipeline {
         return possibleSignals.get(0).y < 10 ? (possibleSignals.get(i).y+possibleSignals.get(i).height+20) : (possibleSignals.get(i).y - 8);
     }
 
-    public void setTrackType(TrackType trackType) {
-        this.trackType = trackType;
+    public void setContourIndex(int contourIndex) {
+        this.contourIndex = contourIndex;
     }
 
-
-    public Signal getSignalColor() {
-        return signalColor;
+    public void setTrackType(TrackType trackType) {
+        CombinedTracker.trackType = trackType;
     }
 
     public Rect getBiggestCone() {
@@ -338,6 +351,14 @@ public class CombinedTracker extends OpenCvPipeline {
             return poleRect;
         }
         return coneColor.equals(DETECT_COLOR.RED) ? redRect : blueRect;
+    }
+
+    public double getPoleDistance() {
+        return poleRect == null ? 0 : ((1.05 * 853.33333333333) / poleRect.width);
+    }
+
+    public static TrackType getTrackType() {
+        return trackType;
     }
 
     public void setDecimation(float decimation)

@@ -4,7 +4,9 @@ import android.util.Log;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.outoftheboxrobotics.photoncore.PhotonCore;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -186,6 +188,8 @@ public class RobotHardware extends OpMode {
                 v.setMode(k.getRunMode());
                 v.setZeroPowerBehavior(k.getZeroPowerBehavior());
                 v.setDirection(k.getDirection());
+                if(k.getPidCoefficients() != null)
+                    k.setController(new PIDFController(k.getPidCoefficients()));
             });
         }
 
@@ -258,6 +262,16 @@ public class RobotHardware extends OpMode {
             }
 
             return Math.abs(errorSignal) <= arrivedDistance;
+        }
+
+        //ToDo Prevent PID Controller from possibly being null
+        public PIDFController getController(Motors motor) {
+            getMotor(motor);
+            if(motor == null) return null;
+            PIDFController controller = motor.getController();
+            if(controller == null && packet != null)
+                packet.put("PID Controller Missing", motor.name());
+            return controller;
         }
 
         /**
@@ -359,7 +373,7 @@ public class RobotHardware extends OpMode {
     }
 
     public void loadVision() {
-        visionDetection = new CombinedDetector(hardwareMap, Webcam.VISION.getName());
+        visionDetection = new CombinedDetector(hardwareMap, Webcam.VISION_RIGHT.getName(), Webcam.VISION_LEFT.getName());
         visionDetection.init();
     }
 
@@ -440,6 +454,8 @@ public class RobotHardware extends OpMode {
                 colorSensor.enableLed(false);
             } catch (IllegalArgumentException ignore) {}
         }
+
+        PhotonCore.enable();
 
         primary = new Controller(gamepad1);
         secondary = new Controller(gamepad2);

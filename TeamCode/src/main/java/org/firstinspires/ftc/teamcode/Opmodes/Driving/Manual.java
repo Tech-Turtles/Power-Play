@@ -2,25 +2,26 @@ package org.firstinspires.ftc.teamcode.Opmodes.Driving;
 
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.DRIVE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.SLIDE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.TURRET;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_CLOSED;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_OPEN;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.acmerobotics.roadrunner.profile.MotionProfile;
+import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
+import com.acmerobotics.roadrunner.profile.MotionState;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
-import org.firstinspires.ftc.teamcode.Utility.Autonomous.TrajectoryRR;
 import org.firstinspires.ftc.teamcode.Utility.Configuration;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
-import org.firstinspires.ftc.teamcode.Utility.PIDController;
 import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 import org.opencv.core.Rect;
 
@@ -30,30 +31,35 @@ import org.opencv.core.Rect;
 public class Manual extends RobotHardware {
     
     public static double precisionMode = 1.0;
-    public static double precisionPercentage = 0.35;
+    public static double precisionPercentage = 0.2625;
     public static double clawGrab = CLAW_OPEN;
-    public static double linearSpeed = 0.75;
-    public static double lateralSpeed = 0.75;
+    public static double linearSpeed = 1.0;
+    public static double lateralSpeed = 1.0;
     public static double rotationSpeed = 1.0;
     public static double turretSpeed = 0.8;
-    public static double slideMultiplier = 8.0;
-    public static double turretMultiplier = 1.0;
-    public static double reverseScale = 0.1;
+    public static double turretMultiplier = 0.8;
+
+    public static double turretA = 1000;
+    public static double turretV = 1500;
+
+    double theta = Math.toRadians(0.0);
 
     public static Configuration.ServoPosition armPosition = Configuration.ServoPosition.HOLD;
 
-    private final PIDController pidController = new PIDController();
-    public double setpoint = 0.0;
+    public static int contourIndex = 0;
+
+    public static Pose2d startingPosition = new Pose2d();
 
     private final Executive.StateMachine<Manual> stateMachine;
-    private TrajectoryRR trajectoryRR;
+    public static double liftSpeed = 0.7;
 
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,
+        CONSTANT_HEADING,
         NORMAL_FIELD_CENTRIC
     }
 
-    private DriveMode currentDriveMode = DriveMode.NORMAL_FIELD_CENTRIC;
+    public static DriveMode currentDriveMode = DriveMode.NORMAL_FIELD_CENTRIC;
 
     public Manual() {
         stateMachine = new Executive.StateMachine<>(this);
@@ -69,11 +75,6 @@ public class Manual extends RobotHardware {
         stateMachine.init();
 
         mecanumDrive = new SampleMecanumDrive(hardwareMap, this);
-        trajectoryRR = new TrajectoryRR(this.mecanumDrive);
-
-        motorUtility.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(1, 0, 0, 12), Motors.SLIDE_LEFT, Motors.SLIDE_RIGHT);
-
-        setpoint = 0.0;
     }
 
     @Override
@@ -85,10 +86,10 @@ public class Manual extends RobotHardware {
     @Override
     public void start() {
         super.start();
-        mecanumDrive.setPoseEstimate(new Pose2d());
-        pidController.init(0.005, 0.0, 0.0);
+        mecanumDrive.setPoseEstimate(startingPosition);
         stateMachine.changeState(DRIVE, new Drive_Manual());
         stateMachine.changeState(TURRET, new Turret_Manual());
+        stateMachine.changeState(SLIDE, new Slide_Manual());
     }
 
     @Override
@@ -109,8 +110,11 @@ public class Manual extends RobotHardware {
             if(primary.AOnce())
                 precisionMode = precisionMode == 1 ? precisionPercentage : 1;
 
+            if(primary.YOnce())
+                mecanumDrive.setPoseEstimate(new Pose2d(mecanumDrive.getPoseEstimate().vec(), 0.0));
+
             if(primary.BOnce())
-                currentDriveMode = currentDriveMode == DriveMode.NORMAL_ROBOT_CENTRIC ? DriveMode.NORMAL_FIELD_CENTRIC : DriveMode.NORMAL_ROBOT_CENTRIC;
+                currentDriveMode = currentDriveMode == DriveMode.NORMAL_FIELD_CENTRIC ? DriveMode.NORMAL_ROBOT_CENTRIC : DriveMode.NORMAL_FIELD_CENTRIC;
 
             switch (currentDriveMode) {
                 case NORMAL_ROBOT_CENTRIC:
@@ -126,25 +130,21 @@ public class Manual extends RobotHardware {
                             -gamepad1.left_stick_x * lateralSpeed * precisionMode);
 
                     Vector2d robotFrameInput = fieldFrameInput
-                            .rotated(-poseEstimate.getHeading());
+                            .rotated(-poseEstimate.getHeading())
+                            .rotated(Math.toRadians(90.0));
                     driveDirection = new Pose2d(
                             robotFrameInput.getX(), robotFrameInput.getY(),
                             -primary.right_stick_x * rotationSpeed * precisionMode
                     );
+                    theta = mecanumDrive.getPoseEstimate().getHeading();
                     break;
-            }
-
-            // Prevent slides from being powered if they are at a zero-like position.
-            if(setpoint > 30.0) {
-                motorUtility.setPower(Motors.SLIDE_LEFT, (motorUtility.getEncoderValue(Motors.SLIDE_LEFT) > setpoint + 15 ? reverseScale : 0.75) * pidController.update(setpoint, motorUtility.getEncoderValue(Motors.SLIDE_LEFT), statePeriod.seconds()));
-                motorUtility.setPower(Motors.SLIDE_RIGHT, (motorUtility.getEncoderValue(Motors.SLIDE_RIGHT) > setpoint + 15 ? reverseScale : 0.75) * pidController.update(setpoint, motorUtility.getEncoderValue(Motors.SLIDE_RIGHT), statePeriod.seconds()));
             }
 
             mecanumDrive.setWeightedDrivePower(driveDirection);
 
-            if(primary.X() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Cone_Align.class)) {
-                stateMachine.changeState(TURRET, new Turret_Cone_Align());
-            } else if(!stateMachine.getCurrentStateByType(TURRET).equals(Turret_Manual.class) && !primary.X()) {
+            if(secondary.Y() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Cone_Align_Bang.class)) {
+                stateMachine.changeState(TURRET, new Turret_Cone_Align_Bang());
+            } else if(!stateMachine.getCurrentStateByType(TURRET).equals(Turret_Manual.class) && !secondary.Y() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Angle.class)) {
                 stateMachine.changeState(TURRET, new Turret_Manual());
             }
 
@@ -153,18 +153,12 @@ public class Manual extends RobotHardware {
 
             servoUtility.setAngle(Servos.CLAW, clawGrab);
 
-            setpoint += -secondary.right_stick_y * slideMultiplier;
-
-
-
             if(secondary.AOnce()) {
-                setpoint = Configuration.INTAKE_POS;
+                stateMachine.changeState(SLIDE, new Slide_Position(Configuration.LOW_POS));
             } else if(secondary.BOnce()) {
-                setpoint = Configuration.MEDIUM_POS;
+                stateMachine.changeState(SLIDE, new Slide_Position(Configuration.MEDIUM_POS));
             } else if(secondary.XOnce()) {
-                setpoint = Configuration.HIGH_POS;
-            } else if(secondary.YOnce()) {
-                setpoint = Configuration.LOW_POS;
+                stateMachine.changeState(SLIDE, new Slide_Position(Configuration.HIGH_POS));
             }
 
             if(secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
@@ -189,6 +183,90 @@ public class Manual extends RobotHardware {
                 }
                 stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
             }
+            if(secondary.dpadUpOnce()) {
+                stateMachine.changeState(TURRET, new Turret_Angle(0.0));
+            } else if(secondary.dpadRightOnce()) {
+                stateMachine.changeState(TURRET, new Turret_Angle(-90.0));
+            } else if(secondary.dpadDownOnce()) {
+                stateMachine.changeState(TURRET, new Turret_Angle(180.0));
+            } else if(secondary.dpadLeftOnce()) {
+                stateMachine.changeState(TURRET, new Turret_Angle(90.0));
+            }
+
+            if(secondary.leftTriggerOnce()) {
+                contourIndex++;
+            } else if(secondary.rightStickButtonOnce()) {
+                contourIndex = 0;
+            }
+        }
+    }
+
+    class Slide_Position extends Executive.StateBase<Manual> {
+        private final double setpoint;
+        private PIDFController controllerLeft, controllerRight;
+        private MotionProfile activeProfile;
+        private double profileStart;
+
+        Slide_Position(double setpoint) {
+            this.setpoint = setpoint;
+        }
+
+        @Override
+        public void init(Executive.StateMachine<Manual> stateMachine) {
+            super.init(stateMachine);
+            controllerLeft = opMode.motorUtility.getController(Motors.SLIDE_LEFT);
+            controllerRight = opMode.motorUtility.getController(Motors.SLIDE_RIGHT);
+            profileStart = stateTimer.seconds();
+            MotionState start = new MotionState(opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT), 0, 0, 0);
+            MotionState goal = new MotionState(setpoint, 0, 0, 0);
+            activeProfile = MotionProfileGenerator.generateSimpleMotionProfile(start, goal, 1600, 800);
+        }
+
+        @Override
+        public void update() {
+            super.update();
+
+            if(Math.abs(secondary.left_stick_y) > 0.2) {
+                stateMachine.changeState(SLIDE, new Slide_Manual());
+                profileStart = 0;
+                activeProfile = null;
+                return;
+            }
+
+            double profileTime = stateTimer.seconds() - profileStart;
+
+            MotionState motionState = activeProfile.get(profileTime);
+
+            controllerLeft.setTargetPosition(motionState.getX());
+            controllerLeft.setTargetVelocity(motionState.getV());
+            controllerLeft.setTargetAcceleration(motionState.getA());
+
+            controllerRight.setTargetPosition(motionState.getX());
+            controllerRight.setTargetVelocity(motionState.getV());
+            controllerRight.setTargetAcceleration(motionState.getA());
+
+
+            opMode.motorUtility.setPower(Motors.SLIDE_RIGHT, controllerRight.update(opMode.motorUtility.getEncoderValue(Motors.SLIDE_RIGHT), opMode.motorUtility.getVelocity(Motors.SLIDE_RIGHT)));
+            opMode.motorUtility.setPower(Motors.SLIDE_LEFT, controllerLeft.update(opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT), opMode.motorUtility.getVelocity(Motors.SLIDE_LEFT)));
+
+            isDone = (stateTimer.seconds() - profileStart) > activeProfile.duration();
+        }
+    }
+
+    class Slide_Manual extends Executive.StateBase<Manual> {
+        @Override
+        public void update() {
+            super.update();
+            if(Math.abs(secondary.left_stick_y) < 0.2) {
+                stateMachine.changeState(SLIDE, new Slide_Position(motorUtility.getEncoderValue(Motors.SLIDE_LEFT)));
+                return;
+            }
+
+            if(-secondary.left_stick_y > 0.2 && opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT) <= 100)
+                stateMachine.changeState(SLIDE, new Slide_Position(motorUtility.getEncoderValue(Motors.SLIDE_LEFT)));
+
+            opMode.motorUtility.setPower(Motors.SLIDE_RIGHT, -secondary.left_stick_y < 0 ? -secondary.left_stick_y * liftSpeed : -secondary.left_stick_y);
+            opMode.motorUtility.setPower(Motors.SLIDE_LEFT, -secondary.left_stick_y < 0 ? -secondary.left_stick_y * liftSpeed : -secondary.left_stick_y);
         }
     }
 
@@ -212,6 +290,53 @@ public class Manual extends RobotHardware {
         @Override
         public void update() {
             super.update();
+            PIDFController controller = motorUtility.getController(Motors.TURRET);
+            if(controller == null)
+                return;
+
+            //ToDo See if a motion profile is necessary
+            double turn = calculateTurn() * turretMultiplier;
+            
+            controller.setTargetPosition(motorUtility.getEncoderValue(Motors.TURRET) + (turn * Configuration.TURRET_TICKS_PER_DEGREE));
+            controller.setTargetAcceleration(turretA);
+            controller.setTargetVelocity(turretV);
+
+            motorUtility.setPower(Motors.TURRET, controller.update(motorUtility.getEncoderValue(Motors.TURRET), motorUtility.getVelocity(Motors.TURRET)));
+
+            telemetry.addData("Turret Turn", turn);
+        }
+
+        private double calculateTurn() {
+            if(visionDetection == null)
+                return 0.0;
+
+            visionDetection.getLeftPipeline().setContourIndex(contourIndex);
+
+            Rect r = visionDetection.getLeftPipeline().getBiggestCone();
+
+            if(!(r.area() > 10))
+                return 0.0;
+
+            double coneCenter = r.x + (r.width/2.0);
+
+            if(coneCenter > 312.0 && coneCenter < 328.0)
+                return 0.0;
+
+            double direction = coneCenter < 320.0 ? 1.0 : -1.0;
+            double turnDegrees = Math.abs(coneCenter - 320) / 9.0;
+            return turnDegrees * direction;
+        }
+
+        private double wrapAngle(double angle) {
+            return angle > 180 ? -(angle - 180) : (angle < -180 ? -(angle + 180) : angle);
+        }
+    }
+
+    class Turret_Cone_Align_Bang extends Executive.StateBase<Manual> {
+
+        @Override
+        public void update() {
+            super.update();
             motorUtility.setPower(Motors.TURRET, calculateTurn() * precisionMode);
         }
 
@@ -219,27 +344,52 @@ public class Manual extends RobotHardware {
             if(visionDetection == null)
                 return 0.0;
 
-            Rect r = visionDetection.getPipeline().getBiggestCone();
 
-            if(!(r.area() > 10))
+            Rect r = opMode.visionDetection.getRightPipeline().getBiggestCone();
+            Rect l = opMode.visionDetection.getLeftPipeline().getBiggestCone();
+
+            if(!(r.area() > 80))
                 return 0.0;
 
-            double coneCenter = r.x + (r.width/2.0);
-            // Return if the cone is within tolerances (cone center is within 40 px of camera center)
-            if(coneCenter > 318.0 && coneCenter < 322.0)
+            double coneCenterL = l.x + (l.width/2.0), coneCenterR = r.x + (r.width/2.0);
+            double direction = coneCenterL < 320 - coneCenterR ? 1.0 : -1.0;
+            double turn = Math.abs(coneCenterL - (320 - coneCenterR)) / 200.0;
+
+            if(Math.abs(coneCenterL - (320 - coneCenterR)) < 5)
                 return 0.0;
 
-            double direction = coneCenter < 300.0 ? 1.0 : -1.0;
-            double turn = Math.abs(coneCenter - 320) / 320.0;
             return Range.clip(turn * turretMultiplier, 0.0, 1.0) * direction;
+        }
+    }
+
+    class Turret_Angle extends Executive.StateBase<Manual> {
+        private double angle;
+
+        Turret_Angle(double angle) {
+            this.angle = angle;
+        }
+
+        @Override
+        public void init(Executive.StateMachine<Manual> stateMachine) {
+            super.init(stateMachine);
+            angle = angle * Configuration.TURRET_TICKS_PER_DEGREE;
+        }
+
+        @Override
+        public void update() {
+            super.update();
+            if(Math.abs(secondary.right_stick_x) > 0.3)
+                stateMachine.changeState(TURRET, new Turret_Manual());
+
+            isDone = motorUtility.goToPosition(Motors.TURRET, (int) angle, 1.0);
         }
     }
 
     class Turret_Manual extends Executive.StateBase<Manual> {
         @Override
-        public void init(Executive.StateMachine<Manual> stateMachine) {
-            super.init(stateMachine);
-            motorUtility.setPower(Motors.TURRET, -secondary.left_stick_x * turretSpeed);
+        public void update() {
+            super.update();
+            motorUtility.setPower(Motors.TURRET, -secondary.right_stick_x * turretSpeed);
         }
     }
 
