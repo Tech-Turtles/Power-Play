@@ -155,19 +155,19 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
 
                 this.trajectoryHighPoleToSignalParkAudience =
                     trajectoryBuilder(stackToHighPole.end(), 270.0.toRadians)
-                        .splineToConstantHeading(Vector2d(-35.0,-30.0), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,-32.0), 270.0.toRadians)
                         .splineToConstantHeading(Vector2d(-59.5,-33.0), 180.0.toRadians)
                         .splineToConstantHeading(Vector2d(-59.5,-25.5), 180.0.toRadians)
                         .build()
     
                 this.trajectoryHighPoleToSignalParkMiddle =
                     trajectoryBuilder(stackToHighPole.end(), 270.0.toRadians)
-                        .splineToConstantHeading(Vector2d(-35.0,-30.0), (270.0).toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,-32.0), (270.0).toRadians)
                         .build()
     
                 this.trajectoryHighPoleToSignalParkFar =
                     trajectoryBuilder(stackToHighPole.end(), 270.0.toRadians)
-                        .splineToConstantHeading(Vector2d(-35.0,-30.0), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,-32.0), 270.0.toRadians)
                         .splineToConstantHeading(Vector2d(-11.5,-33.0), 0.0.toRadians)
                         .splineToConstantHeading(Vector2d(-11.5,-25.5), 0.0.toRadians)
                         .build()

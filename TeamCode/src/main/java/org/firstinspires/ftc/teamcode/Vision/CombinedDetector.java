@@ -6,6 +6,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.Utility.Configuration;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
@@ -35,7 +36,7 @@ public class CombinedDetector {
             camera[1] = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, webcamName[1]), viewportContainerIds[1]);
         }
 
-        leftPipeline = new CombinedTracker();
+        leftPipeline = new CombinedTracker(Configuration.LEFT_CAMERA_DEG);
         camera[0].setPipeline(leftPipeline);
         camera[0].openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
 
@@ -50,12 +51,12 @@ public class CombinedDetector {
             }
         });
 
-        if(dashboard)
-            FtcDashboard.getInstance().startCameraStream(camera[0], 30);
+//        if(dashboard)
+//            FtcDashboard.getInstance().startCameraStream(camera[0], 30);
 
         if(camera.length == 1)
             return;
-        rightPipeline = new CombinedTracker();
+        rightPipeline = new CombinedTracker(Configuration.RIGHT_CAMERA_DEG);
         camera[1].setPipeline(rightPipeline);
         camera[1].openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
 
@@ -69,8 +70,8 @@ public class CombinedDetector {
                 Log.wtf("Camera 1 Error", String.valueOf(errorCode));
             }
         });
-//        if(dashboard)
-//            FtcDashboard.getInstance().startCameraStream(camera[1], 30);
+        if(dashboard)
+            FtcDashboard.getInstance().startCameraStream(camera[1], 30);
     }
 
     //ToDo Add wrapper methods to this class rather than return the pipeline itself

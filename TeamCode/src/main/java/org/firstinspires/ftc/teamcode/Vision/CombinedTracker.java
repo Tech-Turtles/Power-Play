@@ -37,6 +37,7 @@ public class CombinedTracker extends OpenCvPipeline {
     private final Scalar HORIZON_COLOR = new Scalar(0,255,0);
     private final Scalar TEXT_COLOR = new Scalar(0, 0, 0);
     private int contourIndex = 0;
+    private final double cameraAngle;
 
     public enum DETECT_COLOR {
         RED,
@@ -116,9 +117,17 @@ public class CombinedTracker extends OpenCvPipeline {
     private boolean needToSetDecimation;
     private final Object decimationSync = new Object();
 
-    public CombinedTracker() {
-        constructMatrix();
+    public CombinedTracker(double cameraAngle) {
+        this.cameraAngle = cameraAngle;
 
+        constructMatrix();
+        // Allocate a native context object. See the corresponding deletion in the finalizer
+        nativeApriltagPtr = AprilTagDetectorJNI.createApriltagDetector(AprilTagDetectorJNI.TagFamily.TAG_36h11.string, 3, 3);
+    }
+
+    public CombinedTracker() {
+        this.cameraAngle = 0.0;
+        constructMatrix();
         // Allocate a native context object. See the corresponding deletion in the finalizer
         nativeApriltagPtr = AprilTagDetectorJNI.createApriltagDetector(AprilTagDetectorJNI.TagFamily.TAG_36h11.string, 3, 3);
     }
@@ -258,7 +267,7 @@ public class CombinedTracker extends OpenCvPipeline {
             }
         }
 
-        Imgproc.line(input, new Point(0,horizon), new Point(640, horizon), HORIZON_COLOR);
+        Imgproc.line(input, new Point(0,horizon), new Point(320, horizon), HORIZON_COLOR);
         Imgproc.circle(input, new Point(320, 240), 3, HORIZON_COLOR, 3);
 //        Imgproc.line(input, new Point(320, 240), new Point(poleRect.x + (poleRect.width/2.0), poleRect.y + (poleRect.height/2.0)), HORIZON_COLOR, 2);
 
@@ -351,6 +360,17 @@ public class CombinedTracker extends OpenCvPipeline {
             return poleRect;
         }
         return coneColor.equals(DETECT_COLOR.RED) ? redRect : blueRect;
+    }
+
+    public double getPoleAngle() {
+        if(poleRect == null)
+            return 0.0;
+        double direction = poleRect.x + (poleRect.width/2.0) > 160.0 ? 1.0 : -1.0;
+        return direction * (Math.abs(160.0 - (poleRect.x + (poleRect.width/2.0))) / 6.23333);
+    }
+
+    public double getCameraAngle() {
+        return cameraAngle;
     }
 
     public double getPoleDistance() {

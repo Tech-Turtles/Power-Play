@@ -19,6 +19,11 @@ public class Configuration {
     public static double CLAW_ALIGN = 0.5;
     public static double CLAW_CLOSED = 0.0;
 
+    // Measured from normal with positive to the right
+    public static double LEFT_CAMERA_DEG = 18.0;
+    public static double RIGHT_CAMERA_DEG = -20.0;
+    public static double CAMERA_DISTANCE_IN = 9.375;
+
     public enum ServoPosition {
         START(0.85, 0.85),
         HOLD(0.8, 0.8),

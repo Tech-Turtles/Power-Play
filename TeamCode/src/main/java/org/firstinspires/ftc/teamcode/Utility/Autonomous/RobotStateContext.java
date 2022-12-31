@@ -35,6 +35,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     private Signal signal = Signal.NONE;
     private final double visionTimeout = 2.0;
     public static boolean blue = false;
+    private int lastTurretPos = 0;
 
     public RobotStateContext(AutoOpmode autoOpmode, AllianceColor allianceColor, StartPosition startPosition) {
         this.autoOpmode = autoOpmode;
@@ -242,7 +243,15 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                 isDone = true;
                 timer.reset();
                 stateMachine.changeState(SLIDE, new SlidePosition(675));
-                if (opMode.visionDetection != null)
+                if(iteration == 4) {
+                    stateMachine.changeState(TURRET, new Executive.StateBase<AutoOpmode>() {
+                        @Override
+                        public void update() {
+                            super.update();
+                            isDone = opMode.motorUtility.goToPosition(Motors.TURRET, lastTurretPos, 1.0);
+                        }
+                    });
+                } else if (opMode.visionDetection != null)
                     stateMachine.changeState(TURRET, new TurretVisionTrack());
                 stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.PLACE, 1.0, Configuration.CLAW_OPEN));
             }
@@ -351,10 +360,13 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
 
             opMode.motorUtility.setPower(Motors.TURRET, calculateTurn());
 
+            if(CombinedTracker.trackType.equals(TrackType.POLE))
+                lastTurretPos = opMode.motorUtility.getEncoderValue(Motors.TURRET);
+
             if(stateTimer.seconds() > 1.0)
                 isDone = true;
 
-            if(isDone && CombinedTracker.getTrackType().equals(TrackType.POLE)) {
+            if(isDone && CombinedTracker.trackType.equals(TrackType.POLE)) {
                 double angle = -0.4 + (Math.toDegrees(Math.acos((opMode.visionDetection.getLeftPipeline().getPoleDistance() * Math.sin(Math.toRadians(63.0)))/19.0)) + 90) / 180.0;
                 stateMachine.changeState(INTAKE, new ArmPositionAngle(angle, angle));
             }
