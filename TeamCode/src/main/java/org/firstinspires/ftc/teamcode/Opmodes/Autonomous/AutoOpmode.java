@@ -40,18 +40,16 @@ public class AutoOpmode extends RobotHardware {
         }
     }
 
-    @Autonomous(name="Official Blue Left", group="A")
+    @Autonomous(name="Red Right", group="A")
     public static class AutoRedBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
             robotStartPos = StartPosition.AUDIENCE;
-            RobotStateContext.blue = true;
             super.init();
         }
     }
 
     @Autonomous(name="Blue Left", group="B")
-    @Disabled
     public static class AutoBluePickup extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
@@ -61,7 +59,6 @@ public class AutoOpmode extends RobotHardware {
     }
 
     @Autonomous(name="Blue Right", group="B")
-    @Disabled
     public static class AutoBlueBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
@@ -74,7 +71,7 @@ public class AutoOpmode extends RobotHardware {
     public void init() {
         super.init();
         robotStateContext = new RobotStateContext(this, robotColor, robotStartPos);
-        new Thread(this::loadVision).start();
+        loadVision();
         mecanumDrive = new SampleMecanumDrive(hardwareMap, this);
         mecanumDrive.setPoseEstimate(new Pose2d(0, 0, 0));
 

@@ -365,8 +365,7 @@ public class CombinedTracker extends OpenCvPipeline {
     public double getPoleAngle() {
         if(poleRect == null)
             return 0.0;
-        double direction = poleRect.x + (poleRect.width/2.0) > 160.0 ? 1.0 : -1.0;
-        return direction * (Math.abs(160.0 - (poleRect.x + (poleRect.width/2.0))) / 6.23333);
+        return((poleRect.x + (poleRect.width/2.0) - 160.0) / 6.23333);
     }
 
     public double getCameraAngle() {

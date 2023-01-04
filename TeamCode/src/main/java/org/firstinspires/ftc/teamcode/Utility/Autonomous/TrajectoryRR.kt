@@ -55,12 +55,11 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
         when(color) {
             AllianceColor.BLUE -> {
 
-                startAudience = Pose2d(-35.0,61.75, 270.0.toRadians)
-                startFar = Pose2d(35.25,61.75, 270.0.toRadians)
+                startAudience = Pose2d(-35.0,61.75, 0.0.toRadians)
+                startFar = Pose2d(35.25,61.75, 0.0.toRadians)
 
                 val startToHighPole = trajectoryBuilder(startAudience, 270.0.toRadians)
-                    .splineToConstantHeading(Vector2d(-35.0, 17.0), 270.0.toRadians)
-                    .splineToSplineHeading(Pose2d(-35.0, 13.0, 0.0.toRadians), 270.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-35.0, 13.0), 270.0.toRadians)
                     .build()
                 this.trajectoryStartToHighPole = startToHighPole
 
@@ -70,7 +69,7 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                 this.trajectoryHighPoleToStack = highPoleToStack
 
                 val slowStackGrab = trajectoryBuilder(highPoleToStack.end(), 180.0.toRadians)
-                    .splineToConstantHeading(Vector2d(-54.0, 13.0), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-53.5, 13.0), 180.0.toRadians)
                     .build()
                 this.trajectorySlowStackGrab = slowStackGrab
 
@@ -110,7 +109,7 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                 this.trajectoryStartToSignalParkFar =
                     trajectoryBuilder(stackToHighPole.end(), 90.0.toRadians)
                         .splineToConstantHeading(Vector2d(-35.0,30.0), 90.0.toRadians)
-                        .splineToConstantHeading(Vector2d(-11.5,30.0), 0.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-11.5,34.5), 0.0.toRadians)
                         .build()
             } else -> {
                 this.trajectoryStartToSignalParkAudience =

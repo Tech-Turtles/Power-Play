@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.Utility.Autonomous;
 
+import static org.firstinspires.ftc.teamcode.Opmodes.Driving.Manual.armOffset;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.DRIVE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.SLIDE;
@@ -19,6 +20,7 @@ import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
 import org.firstinspires.ftc.teamcode.Opmodes.Driving.Manual;
 import org.firstinspires.ftc.teamcode.Utility.Configuration;
+import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 import org.firstinspires.ftc.teamcode.Vision.CombinedTracker;
 import org.firstinspires.ftc.teamcode.Vision.TrackType;
 import org.opencv.core.Rect;
@@ -120,7 +122,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             signal = Signal.getSignalByOrdinal(autoOpmode.tagOfInterest == null ? 0 : autoOpmode.tagOfInterest.id);
 
             if(!signal.equals(Signal.NONE) || stateTimer.seconds() > visionTimeout) {
-                if(blue)
+                if(allianceColor.equals(AllianceColor.BLUE))
                     CombinedTracker.coneColor = CombinedTracker.DETECT_COLOR.BLUE;
                 else
                     CombinedTracker.coneColor = CombinedTracker.DETECT_COLOR.RED;
@@ -154,7 +156,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryStartToHighPole());
             stateMachine.changeState(SLIDE, new SlidePosition(800));
             stateMachine.changeState(INTAKE, new ArmPosition(Configuration.ServoPosition.DAMPEN));
-            stateMachine.changeState(TURRET, new TurretAngle(allianceColor.equals(AllianceColor.BLUE) ? -45 : 45));
+            stateMachine.changeState(TURRET, new TurretAngle(allianceColor.equals(AllianceColor.BLUE) ? 42 : 45));
             CombinedTracker.trackType = TrackType.POLE;
         }
 
@@ -169,7 +171,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                 stateMachine.changeState(SLIDE, new SlidePosition(675));
                 if (opMode.visionDetection != null)
                     stateMachine.changeState(TURRET, new TurretVisionTrack());
-                stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.PLACE, 1.0, Configuration.CLAW_OPEN));
+                stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 1.0, Configuration.CLAW_OPEN));
             }
 
             if(timer.seconds() > 1.5 && isDone) {
@@ -192,7 +194,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryHighPoleToStack());
             stateMachine.changeState(SLIDE, new SlidePosition(Configuration.MEDIUM_POS - 40 - (iteration * 45)));
             stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.5, Configuration.CLAW_OPEN));
-            stateMachine.changeState(TURRET, new TurretAngle(180, 0.3));
+            stateMachine.changeState(TURRET, new TurretAngle(-90.0, 0.3));
             CombinedTracker.trackType = TrackType.CONE;
         }
 
@@ -230,7 +232,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryStackToHighPole());
             stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.DAMPEN, 0, Configuration.CLAW_CLOSED));
             stateMachine.changeState(SLIDE, new SlidePosition(800));
-            stateMachine.changeState(TURRET, new TurretAngle(allianceColor.equals(AllianceColor.BLUE) ? -60 : 60));
+            stateMachine.changeState(TURRET, new TurretAngle(allianceColor.equals(AllianceColor.BLUE) ? 42 : 60));
             CombinedTracker.trackType = TrackType.POLE;
         }
 
@@ -253,7 +255,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                     });
                 } else if (opMode.visionDetection != null)
                     stateMachine.changeState(TURRET, new TurretVisionTrack());
-                stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.PLACE, 1.0, Configuration.CLAW_OPEN));
+                stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 1.0, Configuration.CLAW_OPEN));
             }
 
             if(timer.seconds() > 1.5 && isDone) {
@@ -272,7 +274,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getHighPoleSleeveTrajectory(allianceColor, signal));
             stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.HOLD, 0, Configuration.CLAW_OPEN));
             stateMachine.changeState(SLIDE, new SlidePosition(Configuration.LOW_POS));
-            stateMachine.changeState(TURRET, new TurretAngle(allianceColor.equals(AllianceColor.RED) ? 90 : -90));
+            stateMachine.changeState(TURRET, new TurretAngle(allianceColor.equals(AllianceColor.RED) ? 90 : 0.0));
         }
 
         @Override
@@ -409,6 +411,55 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
 //            double turnDegrees = Math.abs(coneCenter - (268.0 - 5)) / 10.0;
 //            return turnDegrees * direction;
 //        }
+    }
+
+    class ArmPositionVisionDelayedIntake extends Executive.StateBase<AutoOpmode> {
+        private final Configuration.ServoPosition servoPosition;
+        private final double delay, intakePosition;
+        private double prevArmPos;
+        ArmPositionVisionDelayedIntake(Configuration.ServoPosition servoPosition, double delay, double intakePosition) {
+            this.servoPosition = servoPosition;
+            this.delay = delay;
+            this.intakePosition = intakePosition;
+
+            prevArmPos = servoPosition.getLeft();
+        }
+
+        @Override
+        public void update() {
+            super.update();
+
+            if(timer.seconds() > delay)
+                opMode.servoUtility.setAngle(Servos.CLAW, intakePosition);
+
+            if(opMode.visionDetection == null)
+                return;
+            CombinedTracker l = opMode.visionDetection.getLeftPipeline(), r = opMode.visionDetection.getRightPipeline();
+            if(l == null || r == null)
+                return;
+            // alpha
+            double triangleRightAngle = 90 - r.getCameraAngle() + r.getPoleAngle();
+            // beta
+            double triangleLeftAngle = 90 + l.getCameraAngle() - l.getPoleAngle();
+
+            double gamma = 180 - triangleLeftAngle - triangleRightAngle,
+//                rightCameraDist = Math.sin(Math.toRadians(triangleLeftAngle)) * ((Configuration.CAMERA_DISTANCE_IN)/(Math.toRadians(gamma))),
+                    leftCameraDist = Math.sin(Math.toRadians(triangleRightAngle)) *
+                            ((Configuration.CAMERA_DISTANCE_IN)/Math.sin(Math.toRadians(gamma))),
+                    frontDist = Math.abs(leftCameraDist * Math.sin(Math.toRadians(triangleLeftAngle)));
+
+            double pos = Double.parseDouble(RobotHardware.df.format((Math.toDegrees(Math.acos((frontDist - 3.0)/14.0)) + 90.0) / 180.0));
+            pos = CombinedTracker.trackType.equals(TrackType.CONE) ? pos + Configuration.ARM_CONE_OFFSET_IN : pos;
+
+            try {
+                opMode.servoUtility.setAngle(Servos.LEFT_ARM, Range.clip((pos + armOffset), 0.0, 1.0));
+                opMode.servoUtility.setAngle(Servos.RIGHT_ARM, Range.clip(pos + armOffset, 0.0, 1.0));
+                prevArmPos = Range.clip(pos + armOffset, 0.0, 1.0);
+            } catch(IllegalArgumentException ignore) {
+                opMode.servoUtility.setAngle(Servos.LEFT_ARM, prevArmPos);
+                opMode.servoUtility.setAngle(Servos.RIGHT_ARM, prevArmPos);
+            }
+        }
     }
 
     static class ArmPositionDelayedIntake  extends Executive.StateBase<AutoOpmode> {

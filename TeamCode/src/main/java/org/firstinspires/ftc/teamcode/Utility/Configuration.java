@@ -24,14 +24,18 @@ public class Configuration {
     public static double RIGHT_CAMERA_DEG = -20.0;
     public static double CAMERA_DISTANCE_IN = 9.375;
 
+    public static double CLAW_DISTANCE_IN = 1.0;
+    public static double ARM_CONE_OFFSET_IN = 1.5;
+
     public enum ServoPosition {
         START(0.85, 0.85),
         HOLD(0.8, 0.8),
         DAMPEN(0.7, 0.7),
         PLACE(0.67, 0.67),
-        INTERMEDIARY(0.4, 0.4),
+        INTERMEDIARY(0.3, 0.3),
         INTAKE(0.3, 0.3),
-        LOW_INTAKE(0.2, 0.2);
+        LOW_INTAKE(0.2, 0.2),
+        NONE(0.0, 0.0);
         private final double left;
         private final double right;
         ServoPosition(double left, double right) {

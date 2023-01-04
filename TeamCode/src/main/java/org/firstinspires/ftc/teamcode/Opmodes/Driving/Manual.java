@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateM
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.TURRET;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_CLOSED;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_OPEN;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.deadzone;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.control.PIDFController;
@@ -18,11 +19,14 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
+import org.firstinspires.ftc.teamcode.HardwareTypes.RevDistanceSensor;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
 import org.firstinspires.ftc.teamcode.Utility.Configuration;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
+import org.firstinspires.ftc.teamcode.Vision.CombinedTracker;
+import org.firstinspires.ftc.teamcode.Vision.TrackType;
 import org.opencv.core.Rect;
 
 
@@ -52,6 +56,9 @@ public class Manual extends RobotHardware {
 
     private final Executive.StateMachine<Manual> stateMachine;
     public static double liftSpeed = 0.7;
+
+    private double prevArmPos = armPosition.getLeft();
+    public static double armOffset = -0.15;
 
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,
@@ -155,34 +162,79 @@ public class Manual extends RobotHardware {
 
             if(secondary.AOnce()) {
                 stateMachine.changeState(SLIDE, new Slide_Position(Configuration.LOW_POS));
-            } else if(secondary.BOnce()) {
-                stateMachine.changeState(SLIDE, new Slide_Position(Configuration.MEDIUM_POS));
             } else if(secondary.XOnce()) {
                 stateMachine.changeState(SLIDE, new Slide_Position(Configuration.HIGH_POS));
             }
 
-            if(secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
-                switch (armPosition) {
-                    case START:
-                        armPosition = Configuration.ServoPosition.HOLD;
-                        break;
-                    case HOLD:
-                        armPosition = Configuration.ServoPosition.INTERMEDIARY;
-                        break;
-                    case INTERMEDIARY:
-                        armPosition = Configuration.ServoPosition.INTAKE;
-                }
-                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
-            } else if(secondary.leftBumperOnce() && !armPosition.equals(Configuration.ServoPosition.HOLD)) {
-                switch (armPosition) {
-                    case INTERMEDIARY:
-                        armPosition = Configuration.ServoPosition.HOLD;
-                        break;
-                    case INTAKE:
-                        armPosition = Configuration.ServoPosition.INTERMEDIARY;
-                }
-                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
+            if(secondary.BOnce()) {
+                CombinedTracker.trackType = CombinedTracker.trackType.equals(TrackType.CONE) ? TrackType.POLE : TrackType.CONE;
             }
+
+            if(secondary.left_trigger > deadzone) {
+                if(visionDetection == null)
+                    return;
+                CombinedTracker l = visionDetection.getLeftPipeline(), r = visionDetection.getRightPipeline();
+                if(l == null || r == null)
+                    return;
+                // alpha
+                double triangleRightAngle = 90 - r.getCameraAngle() + r.getPoleAngle();
+                // beta
+                double triangleLeftAngle = 90 + l.getCameraAngle() - l.getPoleAngle();
+
+                double gamma = 180 - triangleLeftAngle - triangleRightAngle,
+//                rightCameraDist = Math.sin(Math.toRadians(triangleLeftAngle)) * ((Configuration.CAMERA_DISTANCE_IN)/(Math.toRadians(gamma))),
+                        leftCameraDist = Math.sin(Math.toRadians(triangleRightAngle)) *
+                                ((Configuration.CAMERA_DISTANCE_IN)/Math.sin(Math.toRadians(gamma))),
+                        frontDist = Math.abs(leftCameraDist * Math.sin(Math.toRadians(triangleLeftAngle)));
+
+                double pos = Double.parseDouble(RobotHardware.df.format((Math.toDegrees(Math.acos((frontDist - 3.0)/14.0)) + 90.0) / 180.0));
+                pos = CombinedTracker.trackType.equals(TrackType.CONE) ? pos + Configuration.ARM_CONE_OFFSET_IN : pos;
+
+                try {
+                    servoUtility.setAngle(Servos.LEFT_ARM, Range.clip((pos + armOffset), 0.0, 1.0));
+                    servoUtility.setAngle(Servos.RIGHT_ARM, Range.clip(pos + armOffset, 0.0, 1.0));
+                    prevArmPos = Range.clip(pos + armOffset, 0.0, 1.0);
+                } catch(IllegalArgumentException ignore) {
+                    servoUtility.setAngle(Servos.LEFT_ARM, prevArmPos);
+                    servoUtility.setAngle(Servos.RIGHT_ARM, prevArmPos);
+                }
+
+                armPosition = Configuration.ServoPosition.NONE;
+
+                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(prevArmPos, prevArmPos));
+            } else {
+                if (secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
+                    switch (armPosition) {
+                        case START:
+                        case NONE:
+                            armPosition = Configuration.ServoPosition.HOLD;
+                            break;
+                        case HOLD:
+                            armPosition = Configuration.ServoPosition.INTERMEDIARY;
+                            break;
+                        case INTERMEDIARY:
+                            armPosition = Configuration.ServoPosition.INTAKE;
+                    }
+                    stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
+                } else if (secondary.leftBumperOnce() && !armPosition.equals(Configuration.ServoPosition.HOLD)) {
+                    switch (armPosition) {
+                        case NONE:
+                        case INTERMEDIARY:
+                            armPosition = Configuration.ServoPosition.HOLD;
+                            break;
+                        case INTAKE:
+                            armPosition = Configuration.ServoPosition.INTERMEDIARY;
+                    }
+                    stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
+                }
+            }
+
+            double distance = getDistance(RevDistanceSensor.CLAW_DISTANCE);
+            telemetry.addData("Distance", distance);
+            if(distance < Configuration.CLAW_DISTANCE_IN && CombinedTracker.trackType.equals(TrackType.CONE) && armPosition.equals(Configuration.ServoPosition.INTAKE)) {
+                clawGrab = CLAW_CLOSED;
+            }
+
             if(secondary.dpadUpOnce()) {
                 stateMachine.changeState(TURRET, new Turret_Angle(0.0));
             } else if(secondary.dpadRightOnce()) {
@@ -271,16 +323,22 @@ public class Manual extends RobotHardware {
     }
 
     class Horizontal_Arm_Position extends Executive.StateBase<Manual> {
-        private final Configuration.ServoPosition servoPosition;
+        private final double l, r;
         Horizontal_Arm_Position(Configuration.ServoPosition servoPosition) {
-            this.servoPosition = servoPosition;
+            l = servoPosition.getLeft();
+            r = servoPosition.getRight();
+        }
+
+        Horizontal_Arm_Position(double l, double r) {
+            this.l = l;
+            this.r = r;
         }
 
         @Override
         public void update() {
             super.update();
-            servoUtility.setAngle(Servos.LEFT_ARM, servoPosition.getLeft());
-            servoUtility.setAngle(Servos.RIGHT_ARM, servoPosition.getRight());
+            servoUtility.setAngle(Servos.LEFT_ARM, l);
+            servoUtility.setAngle(Servos.RIGHT_ARM, r);
         }
     }
 

@@ -28,6 +28,7 @@ import org.firstinspires.ftc.teamcode.HardwareTypes.ContinuousServo;
 import org.firstinspires.ftc.teamcode.HardwareTypes.ExpansionHubs;
 import org.firstinspires.ftc.teamcode.HardwareTypes.MotorTypes;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
+import org.firstinspires.ftc.teamcode.HardwareTypes.RevDistanceSensor;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Webcam;
 import org.firstinspires.ftc.teamcode.Utility.Math.ElapsedTimer;
@@ -49,6 +50,7 @@ public class RobotHardware extends OpMode {
     private final HashMap<Servos, ServoImplEx> servos = new HashMap<>();
     private final HashMap<ContinuousServo, CRServo> crServos = new HashMap<>();
     private final HashMap<ColorSensor, RevColorSensorV3> colorSensors = new HashMap<>();
+    private final HashMap<RevDistanceSensor, DistanceSensor> distanceSensors = new HashMap<>();
     // Utility objects to access hardware methods.
     public final MotorUtility motorUtility = new MotorUtility();
     public final ServoUtility servoUtility = new ServoUtility();
@@ -367,8 +369,21 @@ public class RobotHardware extends OpMode {
         return revColorSensorV3;
     }
 
+    private DistanceSensor getDistanceSensor(RevDistanceSensor revDistanceSensor) {
+        DistanceSensor distanceSensor = distanceSensors.get(revDistanceSensor);
+        if(distanceSensor == null && packet != null)
+            packet.addLine("Sensor Missing: " + revDistanceSensor.name());
+        return distanceSensor;
+    }
+
+    public double getDistance(RevDistanceSensor revDistanceSensor) {
+        DistanceSensor distanceSensor = getDistanceSensor(revDistanceSensor);
+        if(distanceSensor == null) return -1.0;
+        return distanceSensor.getDistance(DistanceUnit.INCH);
+    }
+
     public double getDistance(RevColorSensorV3 colorSensor) {
-        if(colorSensor == null) return -1;
+        if(colorSensor == null) return -1.0;
         return ((DistanceSensor) colorSensor).getDistance(DistanceUnit.INCH);
     }
 
@@ -452,6 +467,13 @@ public class RobotHardware extends OpMode {
                 RevColorSensorV3 colorSensor = hardwareMap.get(RevColorSensorV3.class, c.getConfig());
                 colorSensors.put(c, colorSensor);
                 colorSensor.enableLed(false);
+            } catch (IllegalArgumentException ignore) {}
+        }
+
+        for (RevDistanceSensor d : RevDistanceSensor.values()) {
+            try {
+                DistanceSensor distanceSensor = hardwareMap.get(DistanceSensor.class, d.getConfigName());
+                distanceSensors.put(d, distanceSensor);
             } catch (IllegalArgumentException ignore) {}
         }
 
