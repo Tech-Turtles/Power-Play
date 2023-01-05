@@ -27,6 +27,8 @@ public class Configuration {
     public static double CLAW_DISTANCE_IN = 1.0;
     public static double ARM_CONE_OFFSET_IN = 1.5;
 
+    public static int DEFAULT_PARK_ORDINAL = 1;
+
     public enum ServoPosition {
         START(0.85, 0.85),
         HOLD(0.8, 0.8),

@@ -58,7 +58,7 @@ public class Manual extends RobotHardware {
     public static double liftSpeed = 0.7;
 
     private double prevArmPos = armPosition.getLeft();
-    public static double armOffset = -0.15;
+    public static double armOffset = -0.1;
 
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,

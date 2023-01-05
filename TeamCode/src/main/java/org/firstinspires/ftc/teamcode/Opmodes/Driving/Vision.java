@@ -71,19 +71,19 @@ public class Vision extends Manual {
 //        telemetry.addData("right  pole pixels", ((r.getBiggestCone().x + (r.getBiggestCone().width/2.0) - 160.0) / 6.23333));
 //        packet.put("Distance", frontDist);
 
-        double armPosition = Double.parseDouble(RobotHardware.df.format((Math.toDegrees(Math.acos((frontDist - 3.0)/14.0)) + 90.0) / 180.0));
-        telemetry.addData("Arm pos:",armPosition);
-        if(secondary.left_trigger > 0.49) {
-            try {
-                servoUtility.setAngle(Servos.LEFT_ARM, Range.clip((armPosition + armOffset), 0.0, 1.0));
-                servoUtility.setAngle(Servos.RIGHT_ARM, Range.clip(armPosition + armOffset, 0.0, 1.0));
-                prevArmPosition = Range.clip(armPosition + armOffset, 0.0, 1.0);
-                telemetry.addData("Vision Error:", "none");
-            } catch(IllegalArgumentException ignore) {
-                servoUtility.setAngle(Servos.LEFT_ARM, prevArmPosition);
-                servoUtility.setAngle(Servos.RIGHT_ARM, prevArmPosition);
-                telemetry.addData("Vision Error:", "invalid servo position");
-            }
-        }
+//        double armPosition = Double.parseDouble(RobotHardware.df.format((Math.toDegrees(Math.acos((frontDist - 3.0)/14.0)) + 90.0) / 180.0));
+//        telemetry.addData("Arm pos:",armPosition);
+//        if(secondary.left_trigger > 0.49) {
+//            try {
+//                servoUtility.setAngle(Servos.LEFT_ARM, Range.clip((armPosition + armOffset), 0.0, 1.0));
+//                servoUtility.setAngle(Servos.RIGHT_ARM, Range.clip(armPosition + armOffset, 0.0, 1.0));
+//                prevArmPosition = Range.clip(armPosition + armOffset, 0.0, 1.0);
+//                telemetry.addData("Vision Error:", "none");
+//            } catch(IllegalArgumentException ignore) {
+//                servoUtility.setAngle(Servos.LEFT_ARM, prevArmPosition);
+//                servoUtility.setAngle(Servos.RIGHT_ARM, prevArmPosition);
+//                telemetry.addData("Vision Error:", "invalid servo position");
+//            }
+//        }
     }
 }

@@ -64,7 +64,7 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                 this.trajectoryStartToHighPole = startToHighPole
 
                 val highPoleToStack = trajectoryBuilder(startToHighPole.end(), 180.0.toRadians)
-                    .splineToConstantHeading(Vector2d(-45.0, 13.0), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-49.0, 13.0), 180.0.toRadians)
                     .build()
                 this.trajectoryHighPoleToStack = highPoleToStack
 

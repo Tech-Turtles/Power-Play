@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.HardwareTypes;
 public enum ColorSensor {
     ;
 
-    String name;
+    private final String name;
 
     ColorSensor(String name) {
         this.name = name;
