@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.Utility.Autonomous;
 
-import static org.firstinspires.ftc.teamcode.Opmodes.Driving.Manual.armOffset;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.DRIVE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.SLIDE;
@@ -36,10 +35,12 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     private TrajectoryRR trajectoryRR;
     private Signal signal = Signal.NONE;
     private final double visionTimeout = 2.0;
-    public static boolean blue = false;
+    public static boolean far = false;
     private int lastTurretPos = 0;
+    private double lastArmPos = 0.7;
+    public static double armOffset = -0.15;
 
-    private final double HIGH_POLE_POS = 800.0, INTAKE_LOW_POS = Configuration.MEDIUM_POS - 40.0, CONE_STACK_TICKS = 45.0;
+    private final double HIGH_POLE_POS = 800.0 + 45.0, INTAKE_LOW_POS = Configuration.MEDIUM_POS - 40.0, CONE_STACK_TICKS = 45.0;
 
     public RobotStateContext(AutoOpmode autoOpmode, AllianceColor allianceColor, StartPosition startPosition) {
         this.autoOpmode = autoOpmode;
@@ -62,7 +63,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     public void update() {
         stateMachine.update();
         Pose2d poseEstimate = autoOpmode.mecanumDrive.getPoseEstimate();
-        autoOpmode.telemetry.addData("Tag", autoOpmode.tagOfInterest.id);
+        autoOpmode.telemetry.addData("Tag", autoOpmode.tagOfInterest == null ? "NONE" : autoOpmode.tagOfInterest.id);
         autoOpmode.telemetry.addData("X:        ", df.format(poseEstimate.getX()));
         autoOpmode.telemetry.addData("Y:        ", df.format(poseEstimate.getY()));
         autoOpmode.telemetry.addData("Heading:  ", df.format(Math.toDegrees(poseEstimate.getHeading())));
@@ -86,7 +87,12 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         @Override
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
-            if(allianceColor.equals(AllianceColor.BLUE))
+            if(far) {
+                if(allianceColor.equals(AllianceColor.BLUE))
+                    trajectoryRR.resetTrajectories(AllianceColor.RED);
+                else
+                    trajectoryRR.resetTrajectories(AllianceColor.BLUE);
+            } else if(allianceColor.equals(AllianceColor.BLUE))
                 trajectoryRR.resetTrajectories(AllianceColor.BLUE);
 
             switch (startPosition) {
@@ -154,9 +160,9 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
             opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryStartToHighPole());
-            stateMachine.changeState(SLIDE, new SlidePosition(800));
+            stateMachine.changeState(SLIDE, new SlidePosition(HIGH_POLE_POS));
             stateMachine.changeState(INTAKE, new ArmPosition(Configuration.ServoPosition.DAMPEN));
-            stateMachine.changeState(TURRET, new TurretAngle(50.0));
+            stateMachine.changeState(TURRET, new TurretAngle(far ? (allianceColor.equals(AllianceColor.RED) ? (35.0) : (50.0)) : (allianceColor.equals(AllianceColor.RED) ? (50.0) : (35.0))));
             CombinedTracker.trackType = TrackType.POLE;
         }
 
@@ -193,8 +199,8 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             super.init(stateMachine);
             opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryHighPoleToStack());
             stateMachine.changeState(SLIDE, new SlidePosition(INTAKE_LOW_POS - (iteration * CONE_STACK_TICKS)));
-            stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.5, Configuration.CLAW_OPEN));
-            stateMachine.changeState(TURRET, new TurretAngle(allianceColor.equals(AllianceColor.BLUE) ? (-90.0) : (180.0), 0.3));
+            stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.32, Configuration.CLAW_OPEN));
+            stateMachine.changeState(TURRET, new TurretAngle(far ? (allianceColor.equals(AllianceColor.BLUE) ? (180.0) : (-90.0)) : (allianceColor.equals(AllianceColor.BLUE) ? (-90.0) : (180.0)), 0.3));
             CombinedTracker.trackType = TrackType.CONE;
         }
 
@@ -232,7 +238,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryStackToHighPole());
             stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.DAMPEN, 0, Configuration.CLAW_CLOSED));
             stateMachine.changeState(SLIDE, new SlidePosition(HIGH_POLE_POS));
-            stateMachine.changeState(TURRET, new TurretAngle(50.0));
+            stateMachine.changeState(TURRET, new TurretAngle(lastTurretPos / Configuration.TURRET_TICKS_PER_DEGREE));
             CombinedTracker.trackType = TrackType.POLE;
         }
 
@@ -253,9 +259,11 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                             isDone = opMode.motorUtility.goToPosition(Motors.TURRET, lastTurretPos, 1.0);
                         }
                     });
-                } else if (opMode.visionDetection != null)
+                    stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(lastArmPos, lastArmPos, 1.0, Configuration.CLAW_OPEN));
+                } else if (opMode.visionDetection != null) {
                     stateMachine.changeState(TURRET, new TurretVisionTrack());
-                stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 1.0, Configuration.CLAW_OPEN));
+                    stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 1.0, Configuration.CLAW_OPEN));
+                }
             }
 
             if(timer.seconds() > 1.5 && isDone) {
@@ -274,7 +282,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getHighPoleSleeveTrajectory(allianceColor, signal));
             stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.HOLD, 0, Configuration.CLAW_OPEN));
             stateMachine.changeState(SLIDE, new SlidePosition(Configuration.LOW_POS));
-            stateMachine.changeState(TURRET, new TurretAngle(allianceColor.equals(AllianceColor.RED) ? 90 : 0.0));
+            stateMachine.changeState(TURRET, new TurretAngle(far ? (allianceColor.equals(AllianceColor.RED) ? (0.0) : (90.0)) : (allianceColor.equals(AllianceColor.RED) ? (90.0) : (0.0))));
         }
 
         @Override
@@ -459,14 +467,23 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                 opMode.servoUtility.setAngle(Servos.LEFT_ARM, prevArmPos);
                 opMode.servoUtility.setAngle(Servos.RIGHT_ARM, prevArmPos);
             }
+            lastArmPos = prevArmPos;
         }
     }
 
     static class ArmPositionDelayedIntake  extends Executive.StateBase<AutoOpmode> {
-        private final Configuration.ServoPosition servoPosition;
+        private final double l,r;
         private final double delay, intakePosition;
         ArmPositionDelayedIntake(Configuration.ServoPosition servoPosition, double delay, double intakePosition) {
-            this.servoPosition = servoPosition;
+            l = servoPosition.getLeft();
+            r = servoPosition.getRight();
+            this.delay = delay;
+            this.intakePosition = intakePosition;
+        }
+
+        ArmPositionDelayedIntake(double l, double r, double delay, double intakePosition) {
+            this.l = l;
+            this.r = r;
             this.delay = delay;
             this.intakePosition = intakePosition;
         }
@@ -474,8 +491,8 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         @Override
         public void update() {
             super.update();
-            opMode.servoUtility.setAngle(Servos.LEFT_ARM, servoPosition.getLeft());
-            opMode.servoUtility.setAngle(Servos.RIGHT_ARM, servoPosition.getRight());
+            opMode.servoUtility.setAngle(Servos.LEFT_ARM, l);
+            opMode.servoUtility.setAngle(Servos.RIGHT_ARM, r);
             if(timer.seconds() > delay)
                 opMode.servoUtility.setAngle(Servos.CLAW, intakePosition);
         }

@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.Opmodes.Autonomous;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
@@ -12,6 +11,7 @@ import org.firstinspires.ftc.teamcode.Utility.Autonomous.StartPosition;
 import org.firstinspires.ftc.teamcode.Utility.Configuration;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
+import org.firstinspires.ftc.teamcode.Vision.CombinedTracker;
 import org.firstinspires.ftc.teamcode.Vision.TrackType;
 import org.openftc.apriltag.AprilTagDetection;
 
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 
 public class AutoOpmode extends RobotHardware {
 
-    AllianceColor robotColor;
+    public static AllianceColor robotColor = AllianceColor.RED;
     StartPosition robotStartPos;
     private Executive.RobotStateMachineContextInterface robotStateContext;
     int LEFT = 1;
@@ -28,14 +28,13 @@ public class AutoOpmode extends RobotHardware {
     int RIGHT = 3;
 
     public AprilTagDetection tagOfInterest = null;
-    boolean visionInitialized = false;
 
     @Autonomous(name="Red Left", group="A")
     public static class AutoRedPickup extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
             robotStartPos = StartPosition.AUDIENCE;
-            RobotStateContext.blue = false;
+            RobotStateContext.far = false;
             super.init();
         }
     }
@@ -44,6 +43,7 @@ public class AutoOpmode extends RobotHardware {
     public static class AutoRedBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
+            RobotStateContext.far = true;
             robotStartPos = StartPosition.AUDIENCE;
             super.init();
         }
@@ -53,7 +53,8 @@ public class AutoOpmode extends RobotHardware {
     public static class AutoBluePickup extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
-            robotStartPos = StartPosition.FAR;
+            RobotStateContext.far = true;
+            robotStartPos = StartPosition.AUDIENCE;
             super.init();
         }
     }
@@ -63,6 +64,7 @@ public class AutoOpmode extends RobotHardware {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
             robotStartPos = StartPosition.AUDIENCE;
+            RobotStateContext.far = false;
             super.init();
         }
     }
@@ -70,6 +72,7 @@ public class AutoOpmode extends RobotHardware {
     @Override
     public void init() {
         super.init();
+        CombinedTracker.trackType = TrackType.SLEEVE;
         robotStateContext = new RobotStateContext(this, robotColor, robotStartPos);
         loadVision();
         mecanumDrive = new SampleMecanumDrive(hardwareMap, this);
@@ -85,12 +88,11 @@ public class AutoOpmode extends RobotHardware {
         primary.update();
         if(visionDetection == null || visionDetection.getLeftPipeline() == null)
             return;
-        if(!visionInitialized) {
-            visionDetection.getLeftPipeline().setTrackType(TrackType.SLEEVE);
-            visionInitialized = true;
-        }
 
         ArrayList<AprilTagDetection> currentDetections = visionDetection.getLeftPipeline().getLatestDetections();
+        if(visionDetection.getRightPipeline() != null)
+            currentDetections.addAll(visionDetection.getRightPipeline().getLatestDetections());
+
         if(currentDetections.size() != 0)
         {
             boolean tagFound = false;
@@ -105,39 +107,13 @@ public class AutoOpmode extends RobotHardware {
                 }
             }
 
-            if(tagFound)
-            {
-                telemetry.addData("Tag: ", tagOfInterest.id);
-            }
-            else
-            {
-                telemetry.addLine("Don't see tag of interest :(");
+            if(!tagFound)
+                telemetry.addLine("Cannot see April Tag");
 
-                if(tagOfInterest == null)
-                {
-                    telemetry.addLine("(The tag has never been seen)");
-                }
-                else
-                {
-                    telemetry.addLine("\nBut we HAVE seen the tag before");
-                }
-            }
+        } else
+            telemetry.addLine("Cannot see April Tag");
 
-        }
-        else
-        {
-            telemetry.addLine("Don't see tag of interest :(");
-
-            if(tagOfInterest == null)
-            {
-                telemetry.addLine("(The tag has never been seen)");
-            }
-            else
-            {
-                telemetry.addLine("\nBut we HAVE seen the tag before");
-            }
-
-        }
+        telemetry.addData("Tag", tagOfInterest == null ? "NONE" : tagOfInterest.id);
 
         servoUtility.setAngle(Servos.LEFT_ARM, Configuration.ServoPosition.START.getLeft());
         servoUtility.setAngle(Servos.RIGHT_ARM, Configuration.ServoPosition.START.getRight());

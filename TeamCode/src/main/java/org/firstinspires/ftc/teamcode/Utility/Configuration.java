@@ -11,7 +11,7 @@ public class Configuration {
     public static final double TURRET_TICKS_PER_DEGREE = 7.155;
 
     public static double INTAKE_POS = 280;
-    public static double LOW_POS = 170;
+    public static double LOW_POS = 200;
     public static double MEDIUM_POS = 525;
     public static double HIGH_POS = 800;
 
@@ -25,7 +25,7 @@ public class Configuration {
     public static double CAMERA_DISTANCE_IN = 9.375;
 
     public static double CLAW_DISTANCE_IN = 1.0;
-    public static double ARM_CONE_OFFSET_IN = 1.5;
+    public static double ARM_CONE_OFFSET_IN = 0.3;
 
     public static int DEFAULT_PARK_ORDINAL = 1;
 

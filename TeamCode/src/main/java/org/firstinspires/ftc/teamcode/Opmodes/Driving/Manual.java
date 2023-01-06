@@ -21,6 +21,8 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
 import org.firstinspires.ftc.teamcode.HardwareTypes.RevDistanceSensor;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
+import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
 import org.firstinspires.ftc.teamcode.Utility.Configuration;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
@@ -35,7 +37,7 @@ import org.opencv.core.Rect;
 public class Manual extends RobotHardware {
     
     public static double precisionMode = 1.0;
-    public static double precisionPercentage = 0.2625;
+    public static double precisionPercentage = 0.35;
     public static double clawGrab = CLAW_OPEN;
     public static double linearSpeed = 1.0;
     public static double lateralSpeed = 1.0;
@@ -58,7 +60,7 @@ public class Manual extends RobotHardware {
     public static double liftSpeed = 0.7;
 
     private double prevArmPos = armPosition.getLeft();
-    public static double armOffset = -0.1;
+    public static double armOffset = -0.12;
 
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,
@@ -138,7 +140,7 @@ public class Manual extends RobotHardware {
 
                     Vector2d robotFrameInput = fieldFrameInput
                             .rotated(-poseEstimate.getHeading())
-                            .rotated(Math.toRadians(90.0));
+                            .rotated(Math.toRadians(AutoOpmode.robotColor.equals(AllianceColor.RED) ? 90.0 : 270.0));
                     driveDirection = new Pose2d(
                             robotFrameInput.getX(), robotFrameInput.getY(),
                             -primary.right_stick_x * rotationSpeed * precisionMode
@@ -169,6 +171,7 @@ public class Manual extends RobotHardware {
             if(secondary.BOnce()) {
                 CombinedTracker.trackType = CombinedTracker.trackType.equals(TrackType.CONE) ? TrackType.POLE : TrackType.CONE;
             }
+            telemetry.addData("Tracking:", CombinedTracker.trackType.name());
 
             if(secondary.left_trigger > deadzone) {
                 if(visionDetection == null)
@@ -177,18 +180,17 @@ public class Manual extends RobotHardware {
                 if(l == null || r == null)
                     return;
                 // alpha
-                double triangleRightAngle = 90 - r.getCameraAngle() + r.getPoleAngle();
+                double triangleRightAngle = 90 - r.getCameraAngle() + r.getObjectAngle();
                 // beta
-                double triangleLeftAngle = 90 + l.getCameraAngle() - l.getPoleAngle();
+                double triangleLeftAngle = 90 + l.getCameraAngle() - l.getObjectAngle();
 
                 double gamma = 180 - triangleLeftAngle - triangleRightAngle,
 //                rightCameraDist = Math.sin(Math.toRadians(triangleLeftAngle)) * ((Configuration.CAMERA_DISTANCE_IN)/(Math.toRadians(gamma))),
                         leftCameraDist = Math.sin(Math.toRadians(triangleRightAngle)) *
                                 ((Configuration.CAMERA_DISTANCE_IN)/Math.sin(Math.toRadians(gamma))),
                         frontDist = Math.abs(leftCameraDist * Math.sin(Math.toRadians(triangleLeftAngle)));
-
+                frontDist = CombinedTracker.trackType.equals(TrackType.CONE) ? frontDist + Configuration.ARM_CONE_OFFSET_IN : frontDist;
                 double pos = Double.parseDouble(RobotHardware.df.format((Math.toDegrees(Math.acos((frontDist - 3.0)/14.0)) + 90.0) / 180.0));
-                pos = CombinedTracker.trackType.equals(TrackType.CONE) ? pos + Configuration.ARM_CONE_OFFSET_IN : pos;
 
                 try {
                     servoUtility.setAngle(Servos.LEFT_ARM, Range.clip((pos + armOffset), 0.0, 1.0));
@@ -206,12 +208,12 @@ public class Manual extends RobotHardware {
                 if (secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
                     switch (armPosition) {
                         case START:
-                        case NONE:
                             armPosition = Configuration.ServoPosition.HOLD;
                             break;
                         case HOLD:
                             armPosition = Configuration.ServoPosition.INTERMEDIARY;
                             break;
+                        case NONE:
                         case INTERMEDIARY:
                             armPosition = Configuration.ServoPosition.INTAKE;
                     }
@@ -229,11 +231,11 @@ public class Manual extends RobotHardware {
                 }
             }
 
-            double distance = getDistance(RevDistanceSensor.CLAW_DISTANCE);
-            telemetry.addData("Distance", distance);
-            if(distance < Configuration.CLAW_DISTANCE_IN && CombinedTracker.trackType.equals(TrackType.CONE) && armPosition.equals(Configuration.ServoPosition.INTAKE)) {
-                clawGrab = CLAW_CLOSED;
-            }
+//            double distance = getDistance(RevDistanceSensor.CLAW_DISTANCE);
+//            telemetry.addData("Distance", distance);
+//            if(distance < Configuration.CLAW_DISTANCE_IN && CombinedTracker.trackType.equals(TrackType.CONE) && armPosition.equals(Configuration.ServoPosition.INTAKE)) {
+//                clawGrab = CLAW_CLOSED;
+//            }
 
             if(secondary.dpadUpOnce()) {
                 stateMachine.changeState(TURRET, new Turret_Angle(0.0));

@@ -50,9 +50,9 @@ public class Vision extends Manual {
         if(l == null || r == null)
             return;
         // alpha
-        double triangleRightAngle = 90 - r.getCameraAngle() + r.getPoleAngle();
+        double triangleRightAngle = 90 - r.getCameraAngle() + r.getObjectAngle();
         // beta
-        double triangleLeftAngle = 90 + l.getCameraAngle() - l.getPoleAngle();
+        double triangleLeftAngle = 90 + l.getCameraAngle() - l.getObjectAngle();
 
         double gamma = 180 - triangleLeftAngle - triangleRightAngle,
 //                rightCameraDist = Math.sin(Math.toRadians(triangleLeftAngle)) * ((Configuration.CAMERA_DISTANCE_IN)/(Math.toRadians(gamma))),

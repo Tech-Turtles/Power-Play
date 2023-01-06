@@ -368,6 +368,13 @@ public class CombinedTracker extends OpenCvPipeline {
         return((poleRect.x + (poleRect.width/2.0) - 160.0) / 6.23333);
     }
 
+    public double getObjectAngle() {
+        Rect r = getBiggestCone();
+        if(r == null)
+            return 0.0;
+        return((r.x + (r.width/2.0) - 160.0) / 6.23333);
+    }
+
     public double getCameraAngle() {
         return cameraAngle;
     }

@@ -64,7 +64,7 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                 this.trajectoryStartToHighPole = startToHighPole
 
                 val highPoleToStack = trajectoryBuilder(startToHighPole.end(), 180.0.toRadians)
-                    .splineToConstantHeading(Vector2d(-49.0, 13.0), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-46.0, 13.0), 180.0.toRadians)
                     .build()
                 this.trajectoryHighPoleToStack = highPoleToStack
 
@@ -112,6 +112,9 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                         .splineToConstantHeading(Vector2d(-11.5,34.5), 0.0.toRadians)
                         .build()
             } else -> {
+                startAudience = Pose2d(-35.0,-61.75,90.0.toRadians)
+                startFar = Pose2d(35.25,-61.75,0.0.toRadians)
+
                 this.trajectoryStartToSignalParkAudience =
                     trajectoryBuilder(startAudience, 180.0.toRadians)
                         .splineToConstantHeading(Vector2d(-59.5,-58.5), (90.0).toRadians)
