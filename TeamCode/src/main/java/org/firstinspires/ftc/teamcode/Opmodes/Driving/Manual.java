@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateM
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.SLIDE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.TURRET;
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.RobotStateContext.far;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_CLOSED;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_OPEN;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.deadzone;
@@ -140,7 +141,8 @@ public class Manual extends RobotHardware {
 
                     Vector2d robotFrameInput = fieldFrameInput
                             .rotated(-poseEstimate.getHeading())
-                            .rotated(Math.toRadians(AutoOpmode.robotColor.equals(AllianceColor.RED) ? 90.0 : 270.0));
+                            .rotated(Math.toRadians(far ? (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (270.0) : (90.0)) : (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (90.0) : (270.0))));
+//                            .rotated(Math.toRadians(AutoOpmode.robotColor.equals(AllianceColor.RED) ? 90.0 : 270.0));
                     driveDirection = new Pose2d(
                             robotFrameInput.getX(), robotFrameInput.getY(),
                             -primary.right_stick_x * rotationSpeed * precisionMode
