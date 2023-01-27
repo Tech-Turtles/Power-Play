@@ -44,7 +44,7 @@ public class Manual extends RobotHardware {
     public static double lateralSpeed = 1.0;
     public static double rotationSpeed = 1.0;
     public static double turretSpeed = 0.8;
-    public static double turretMultiplier = 0.8;
+    public static double turretMultiplier = 1.0;
 
     public static double turretA = 1000;
     public static double turretV = 1500;
@@ -58,10 +58,11 @@ public class Manual extends RobotHardware {
     public static Pose2d startingPosition = new Pose2d();
 
     private final Executive.StateMachine<Manual> stateMachine;
-    public static double liftSpeed = 0.7;
+    public static double liftSpeed = 0.85;
 
     private double prevArmPos = armPosition.getLeft();
     public static double armOffset = -0.12;
+    public static double liftDownSpeed = 0.3;
 
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,
@@ -126,6 +127,15 @@ public class Manual extends RobotHardware {
             if(primary.BOnce())
                 currentDriveMode = currentDriveMode == DriveMode.NORMAL_FIELD_CENTRIC ? DriveMode.NORMAL_ROBOT_CENTRIC : DriveMode.NORMAL_FIELD_CENTRIC;
 
+            if(primary.dpadRightOnce()) {
+                armOffset -= 0.02;
+            } else if(primary.dpadDownOnce()) {
+                armOffset += 0.02;
+            } else if(primary.dpadUpOnce()) {
+                armPosition = Configuration.ServoPosition.PLACE;
+                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
+            }
+
             switch (currentDriveMode) {
                 case NORMAL_ROBOT_CENTRIC:
                     driveDirection = new Pose2d(
@@ -175,7 +185,7 @@ public class Manual extends RobotHardware {
             }
             telemetry.addData("Tracking:", CombinedTracker.trackType.name());
 
-            if(secondary.left_trigger > deadzone) {
+            if(secondary.left_trigger > deadzone && !secondary.leftTriggerOnce()) {
                 if(visionDetection == null)
                     return;
                 CombinedTracker l = visionDetection.getLeftPipeline(), r = visionDetection.getRightPipeline();
@@ -207,7 +217,9 @@ public class Manual extends RobotHardware {
 
                 stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(prevArmPos, prevArmPos));
             } else {
-                if (secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
+                if(secondary.leftTriggerOnce()) {
+                    stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(Configuration.ServoPosition.HOLD));
+                } else if (secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
                     switch (armPosition) {
                         case START:
                             armPosition = Configuration.ServoPosition.HOLD;
@@ -275,7 +287,7 @@ public class Manual extends RobotHardware {
             profileStart = stateTimer.seconds();
             MotionState start = new MotionState(opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT), 0, 0, 0);
             MotionState goal = new MotionState(setpoint, 0, 0, 0);
-            activeProfile = MotionProfileGenerator.generateSimpleMotionProfile(start, goal, 1600, 800);
+            activeProfile = MotionProfileGenerator.generateSimpleMotionProfile(start, goal, 1800, 1200);
         }
 
         @Override
@@ -321,8 +333,8 @@ public class Manual extends RobotHardware {
             if(-secondary.left_stick_y > 0.2 && opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT) <= 100)
                 stateMachine.changeState(SLIDE, new Slide_Position(motorUtility.getEncoderValue(Motors.SLIDE_LEFT)));
 
-            opMode.motorUtility.setPower(Motors.SLIDE_RIGHT, -secondary.left_stick_y < 0 ? -secondary.left_stick_y * liftSpeed : -secondary.left_stick_y);
-            opMode.motorUtility.setPower(Motors.SLIDE_LEFT, -secondary.left_stick_y < 0 ? -secondary.left_stick_y * liftSpeed : -secondary.left_stick_y);
+            opMode.motorUtility.setPower(Motors.SLIDE_RIGHT, -secondary.left_stick_y < 0 ? -secondary.left_stick_y * liftDownSpeed : -secondary.left_stick_y * liftSpeed);
+            opMode.motorUtility.setPower(Motors.SLIDE_LEFT, -secondary.left_stick_y < 0 ? -secondary.left_stick_y * liftDownSpeed : -secondary.left_stick_y * liftSpeed);
         }
     }
 
@@ -451,7 +463,7 @@ public class Manual extends RobotHardware {
         @Override
         public void update() {
             super.update();
-            motorUtility.setPower(Motors.TURRET, -secondary.right_stick_x * turretSpeed);
+            motorUtility.setPower(Motors.TURRET, (-secondary.right_stick_x * Math.abs(secondary.right_stick_x)) * turretSpeed);
         }
     }
 

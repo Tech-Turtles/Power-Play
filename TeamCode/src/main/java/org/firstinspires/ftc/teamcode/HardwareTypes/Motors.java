@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotor.RunMode;
 import com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 public enum Motors {
 
@@ -14,8 +15,8 @@ public enum Motors {
     BACK_LEFT(  "back left",    ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_WITHOUT_ENCODER),
     BACK_RIGHT( "back right",   ExpansionHubs.HUB2, MotorTypes.DRIVE, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_WITHOUT_ENCODER),
     TURRET("turret", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER, new PIDCoefficients(0.0065, 0.0, 0.0001)),
-    SLIDE_LEFT("slide left", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER, new PIDCoefficients(0.003, 0.0005, 0.0003)),
-    SLIDE_RIGHT("slide right", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_USING_ENCODER, new PIDCoefficients(0.003, 0.0005, 0.0003));
+    SLIDE_LEFT("slide left", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.REVERSE, ZeroPowerBehavior.BRAKE, RunMode.RUN_WITHOUT_ENCODER, new PIDFController(new PIDCoefficients(0.0075, 0.0, 0.00005), 0.0008, 0.00005, 0.001)),
+    SLIDE_RIGHT("slide right", ExpansionHubs.HUB1, MotorTypes.OTHER, DcMotorSimple.Direction.FORWARD, ZeroPowerBehavior.BRAKE, RunMode.RUN_WITHOUT_ENCODER, new PIDFController(new PIDCoefficients(0.0075, 0.0, 0.00005), 0.0008, 0.00005, 0.001));
     
     private final String configName;
     private final ExpansionHubs expansionHub;
