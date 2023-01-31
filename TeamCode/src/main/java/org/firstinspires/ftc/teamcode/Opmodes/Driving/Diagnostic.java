@@ -1,18 +1,10 @@
 package org.firstinspires.ftc.teamcode.Opmodes.Driving;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-import org.firstinspires.ftc.teamcode.HardwareTypes.*;
-import org.firstinspires.ftc.teamcode.Utility.Odometry.IMUUtilities;
-import org.firstinspires.ftc.teamcode.Utility.Roadrunner.util.Encoder;
-import org.firstinspires.ftc.teamcode.Utility.Roadrunner.util.LoggingUtil;
-import org.firstinspires.ftc.teamcode.Utility.Roadrunner.util.TelemetryLog;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
+import org.firstinspires.ftc.teamcode.HardwareTypes.MotorTypes;
+import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
+import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 
 /**
  * @author Christian
@@ -56,8 +48,7 @@ public class Diagnostic extends Manual {
         }
 
         telemetry.addData("Left Encoder" + ": ", motorUtility.getEncoderValue(Motors.FRONT_LEFT));
-        telemetry.addData("Middle Encoder" + ": ", motorUtility.getEncoderValue(Motors.BACK_LEFT));
-        telemetry.addData("Right Encoder" + ": ", motorUtility.getEncoderValue(Motors.FRONT_RIGHT));
+        telemetry.addData("Middle Encoder" + ": ", motorUtility.getEncoderValue(Motors.FRONT_RIGHT));
 
         for (Servos servo : Servos.values()) {
             telemetry.addData(servo.name() + ": ", servoUtility.getAngle(servo));

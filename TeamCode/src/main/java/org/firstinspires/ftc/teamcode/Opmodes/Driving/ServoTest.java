@@ -12,14 +12,7 @@ public class ServoTest extends RobotHardware {
     public static double left = 0.0;
     public static double right = 0.0;
 
-    public static double grabL = 0.8;
-    public static double grabR = 0.8;
-
-    public static double holdL = 0.6;
-    public static double holdR = 0.6;
-
-    public static double startL = 0.34;
-    public static double startR = 0.35;
+    public static double grab = 0.8, hold = 0.6, start = 0.3;
 
     public static ServoState servoState = ServoState.START;
 
@@ -47,16 +40,16 @@ public class ServoTest extends RobotHardware {
                 servoUtility.setAngle(Servos.RIGHT_ARM, right);
                 break;
             case GRAB:
-                servoUtility.setAngle(Servos.LEFT_ARM, grabL);
-                servoUtility.setAngle(Servos.RIGHT_ARM, grabR);
+                servoUtility.setAngle(Servos.LEFT_ARM, grab);
+                servoUtility.setAngle(Servos.RIGHT_ARM, grab);
                 break;
             case HOLD:
-                servoUtility.setAngle(Servos.LEFT_ARM, holdL);
-                servoUtility.setAngle(Servos.RIGHT_ARM, holdR);
+                servoUtility.setAngle(Servos.LEFT_ARM, hold);
+                servoUtility.setAngle(Servos.RIGHT_ARM, hold);
                 break;
             case START:
-                servoUtility.setAngle(Servos.LEFT_ARM, startL);
-                servoUtility.setAngle(Servos.RIGHT_ARM, startR);
+                servoUtility.setAngle(Servos.LEFT_ARM, start);
+                servoUtility.setAngle(Servos.RIGHT_ARM, start);
                 break;
         }
 

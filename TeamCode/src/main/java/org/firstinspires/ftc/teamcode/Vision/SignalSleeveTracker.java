@@ -67,15 +67,15 @@ public class SignalSleeveTracker extends OpenCvPipeline {
         Core.bitwise_and(input, input, maskedInputMat, binaryMat);
 
         if(possibleSignals.get(0).area() > possibleSignals.get(1).area() && possibleSignals.get(0).area() > possibleSignals.get(2).area()) {
-            color = Signal.GREEN;
+            color = Signal.LEFT;
             Imgproc.rectangle(input, possibleSignals.get(0), CONTOUR_COLOR);
             Imgproc.putText(input, "Green", new Point(possibleSignals.get(0).x, wrapText(0)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else if(possibleSignals.get(1).area() > possibleSignals.get(2).area()) {
-            color = Signal.YELLOW;
+            color = Signal.RIGHT;
             Imgproc.rectangle(input, possibleSignals.get(1), CONTOUR_COLOR);
             Imgproc.putText(input, "Yellow", new Point(possibleSignals.get(1).x, wrapText(1)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else if(possibleSignals.get(2).area() > 1) {
-            color = Signal.BLUE;
+            color = Signal.MIDDLE;
             Imgproc.rectangle(input, possibleSignals.get(2), CONTOUR_COLOR);
             Imgproc.putText(input, "Blue", new Point(possibleSignals.get(2).x, wrapText(2)), Imgproc.FONT_HERSHEY_SIMPLEX, 0.8, TEXT_COLOR, 2);
         } else

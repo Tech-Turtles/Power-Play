@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.Utility.Odometry;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.config.Config;

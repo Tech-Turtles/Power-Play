@@ -1,6 +1,14 @@
 package org.firstinspires.ftc.teamcode.Utility.Roadrunner.drive.opmode;
 
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_ACCEL;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_VEL;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.RUN_USING_ENCODER;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kA;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kStatic;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kV;
+
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.kinematics.Kinematics;
@@ -9,20 +17,12 @@ import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
 import com.acmerobotics.roadrunner.profile.MotionState;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 
 import java.util.Objects;
-
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_ACCEL;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_VEL;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.RUN_USING_ENCODER;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kA;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kStatic;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kV;
 
 /*
  * This routine is designed to tune the open-loop feedforward coefficients. Although it may seem unnecessary,
@@ -41,14 +41,19 @@ import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kV;
  * Pressing A (on the Xbox and Logitech F310 gamepads, X on the PS4 Dualshock gamepad) will cede
  * control back to the tuning process.
  */
-@Disabled
+@Config
 @Autonomous(group = "drive")
-public class ManualFeedforwardTuner extends LinearOpMode {
+public class ManualFeedforwardTuner extends RobotHardware {
     public static double DISTANCE = 72; // in
 
     private FtcDashboard dashboard = FtcDashboard.getInstance();
 
     private SampleMecanumDrive drive;
+
+    NanoClock clock;
+    boolean movingForwards;
+    MotionProfile activeProfile;
+    double profileStart;
 
     enum Mode {
         DRIVER_MODE,
@@ -64,7 +69,8 @@ public class ManualFeedforwardTuner extends LinearOpMode {
     }
 
     @Override
-    public void runOpMode() {
+    public void init() {
+        super.init();
         if (RUN_USING_ENCODER) {
             RobotLog.setGlobalErrorMsg("Feedforward constants usually don't need to be tuned " +
                     "when using the built-in drive motor velocity PID.");
@@ -76,73 +82,74 @@ public class ManualFeedforwardTuner extends LinearOpMode {
 
         mode = Mode.TUNING_MODE;
 
-        NanoClock clock = NanoClock.system();
+        clock = NanoClock.system();
 
         telemetry.addLine("Ready!");
         telemetry.update();
         telemetry.clearAll();
+    }
 
-        waitForStart();
+    @Override
+    public void start() {
+        super.start();
+        movingForwards = true;
+        activeProfile = generateProfile(true);
+        profileStart = clock.seconds();
+    }
 
-        if (isStopRequested()) return;
+    @Override
+    public void loop() {
+        super.loop();
+        telemetry.addData("mode", mode);
 
-        boolean movingForwards = true;
-        MotionProfile activeProfile = generateProfile(true);
-        double profileStart = clock.seconds();
+        switch (mode) {
+            case TUNING_MODE:
+                if (gamepad1.y) {
+                    mode = Mode.DRIVER_MODE;
+                }
 
+                // calculate and set the motor power
+                double profileTime = clock.seconds() - profileStart;
 
-        while (!isStopRequested()) {
-            telemetry.addData("mode", mode);
+                if (profileTime > activeProfile.duration()) {
+                    // generate a new profile
+                    movingForwards = !movingForwards;
+                    activeProfile = generateProfile(movingForwards);
+                    profileStart = clock.seconds();
+                }
 
-            switch (mode) {
-                case TUNING_MODE:
-                    if (gamepad1.x) {
-                        mode = Mode.DRIVER_MODE;
-                    }
+                MotionState motionState = activeProfile.get(profileTime);
+                double targetPower = Kinematics.calculateMotorFeedforward(motionState.getV(), motionState.getA(), kV, kA, kStatic);
 
-                    // calculate and set the motor power
-                    double profileTime = clock.seconds() - profileStart;
+                drive.setDrivePower(new Pose2d(targetPower, 0, 0));
+                drive.updatePoseEstimate();
 
-                    if (profileTime > activeProfile.duration()) {
-                        // generate a new profile
-                        movingForwards = !movingForwards;
-                        activeProfile = generateProfile(movingForwards);
-                        profileStart = clock.seconds();
-                    }
+                Pose2d poseVelo = Objects.requireNonNull(drive.getPoseVelocity(), "poseVelocity() must not be null. Ensure that the getWheelVelocities() method has been overridden in your localizer.");
+                double currentVelo = poseVelo.getX();
 
-                    MotionState motionState = activeProfile.get(profileTime);
-                    double targetPower = Kinematics.calculateMotorFeedforward(motionState.getV(), motionState.getA(), kV, kA, kStatic);
+                // update telemetry
+                telemetry.addData("targetVelocity", motionState.getV());
+                telemetry.addData("measuredVelocity", currentVelo);
+                telemetry.addData("error", motionState.getV() - currentVelo);
+                break;
+            case DRIVER_MODE:
+                if (gamepad1.b) {
+                    mode = Mode.TUNING_MODE;
+                    movingForwards = true;
+                    activeProfile = generateProfile(movingForwards);
+                    profileStart = clock.seconds();
+                }
 
-                    drive.setDrivePower(new Pose2d(targetPower, 0, 0));
-                    drive.updatePoseEstimate();
-
-                    Pose2d poseVelo = Objects.requireNonNull(drive.getPoseVelocity(), "poseVelocity() must not be null. Ensure that the getWheelVelocities() method has been overridden in your localizer.");
-                    double currentVelo = poseVelo.getX();
-
-                    // update telemetry
-                    telemetry.addData("targetVelocity", motionState.getV());
-                    telemetry.addData("measuredVelocity", currentVelo);
-                    telemetry.addData("error", motionState.getV() - currentVelo);
-                    break;
-                case DRIVER_MODE:
-                    if (gamepad1.a) {
-                        mode = Mode.TUNING_MODE;
-                        movingForwards = true;
-                        activeProfile = generateProfile(movingForwards);
-                        profileStart = clock.seconds();
-                    }
-
-                    drive.setWeightedDrivePower(
-                            new Pose2d(
-                                    -gamepad1.left_stick_y,
-                                    -gamepad1.left_stick_x,
-                                    -gamepad1.right_stick_x
-                            )
-                    );
-                    break;
-            }
-
-            telemetry.update();
+                drive.setWeightedDrivePower(
+                        new Pose2d(
+                                -gamepad1.left_stick_y,
+                                -gamepad1.left_stick_x,
+                                -gamepad1.right_stick_x
+                        )
+                );
+                break;
         }
+
+        telemetry.update();
     }
 }

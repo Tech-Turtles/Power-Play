@@ -1,56 +1,76 @@
 package org.firstinspires.ftc.teamcode.Opmodes.Driving;
 
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.DRIVE;
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.SLIDE;
+import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.TURRET;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_CLOSED;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_OPEN;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.deadzone;
+
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.acmerobotics.roadrunner.profile.MotionProfile;
+import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
+import com.acmerobotics.roadrunner.profile.MotionState;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.HardwareTypes.ContinuousServo;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
+import org.firstinspires.ftc.teamcode.HardwareTypes.RevDistanceSensor;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
-import org.firstinspires.ftc.teamcode.Utility.*;
+import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
-import org.firstinspires.ftc.teamcode.Utility.Autonomous.TrajectoryRR;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.StartPosition;
+import org.firstinspires.ftc.teamcode.Utility.Configuration;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
+import org.firstinspires.ftc.teamcode.Vision.CombinedTracker;
+import org.firstinspires.ftc.teamcode.Vision.TrackType;
 import org.opencv.core.Rect;
-
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.*;
 
 
 @Config
 @TeleOp(name="Manual", group="A")
 public class Manual extends RobotHardware {
-
-    public static double driveSpeed = 1.0;
+    
     public static double precisionMode = 1.0;
     public static double precisionPercentage = 0.35;
-    public static double linearSpeed = 0.75;
-    public static double lateralSpeed = 0.75;
+    public static double clawGrab = CLAW_OPEN;
+    public static double linearSpeed = 1.0;
+    public static double lateralSpeed = 1.0;
     public static double rotationSpeed = 1.0;
     public static double turretSpeed = 0.8;
-    public static double slideMultiplier = 8.0;
-    public static double turretMultiplier = 1.5;
-    public static double reverseScale = 0.1;
+    public static double turretMultiplier = 1.0;
 
-    public boolean hasStarted = false;
+    public static double turretA = 1000;
+    public static double turretV = 1500;
 
-    public static Configuration.ServoPosition armPosition = Configuration.ServoPosition.START;
+    double theta = Math.toRadians(0.0);
 
-    private final PIDController pidController = new PIDController();
-    public double setpoint = 0.0;
+    public static Configuration.ServoPosition armPosition = Configuration.ServoPosition.TELEOP_HOLD;
+
+    public static int contourIndex = 0;
+
+    public static Pose2d startingPosition = new Pose2d();
 
     private final Executive.StateMachine<Manual> stateMachine;
-    private TrajectoryRR trajectoryRR;
+    public static double liftSpeed = 0.85;
+
+    private double prevArmPos = armPosition.getLeft();
+    public static double armOffset = -0.12;
+    public static double liftDownSpeed = 0.3;
 
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,
+        CONSTANT_HEADING,
         NORMAL_FIELD_CENTRIC
     }
 
-    private DriveMode currentDriveMode = DriveMode.NORMAL_FIELD_CENTRIC;
+    public static DriveMode currentDriveMode = DriveMode.NORMAL_FIELD_CENTRIC;
 
     public Manual() {
         stateMachine = new Executive.StateMachine<>(this);
@@ -60,16 +80,12 @@ public class Manual extends RobotHardware {
     @Override
     public void init() {
         super.init();
-        hasStarted = false;
-        stateMachine.changeState(DRIVE, new Drive_Manual());
-        stateMachine.changeState(TURRET, new Turret_Stop());
-        stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(Configuration.ServoPosition.START));
+        armPosition = Configuration.ServoPosition.TELEOP_HOLD;
+
+        stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
         stateMachine.init();
 
         mecanumDrive = new SampleMecanumDrive(hardwareMap, this);
-        trajectoryRR = new TrajectoryRR(this.mecanumDrive);
-
-        motorUtility.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(1, 0, 0, 12), Motors.SLIDE_LEFT, Motors.SLIDE_RIGHT);
     }
 
     @Override
@@ -81,11 +97,10 @@ public class Manual extends RobotHardware {
     @Override
     public void start() {
         super.start();
-//        mecanumDrive.setPoseEstimate(new Pose2d(-72+8.5,0));
-        mecanumDrive.setPoseEstimate(new Pose2d());
-        pidController.init(0.005, 0.0, 0.0);
-        hasStarted = false;
-        stateMachine.removeStateByType(INTAKE);
+        mecanumDrive.setPoseEstimate(startingPosition);
+        stateMachine.changeState(DRIVE, new Drive_Manual());
+        stateMachine.changeState(TURRET, new Turret_Manual());
+        stateMachine.changeState(SLIDE, new Slide_Manual());
     }
 
     @Override
@@ -103,12 +118,23 @@ public class Manual extends RobotHardware {
             Pose2d poseEstimate = mecanumDrive.getPoseEstimate();
             Pose2d driveDirection = new Pose2d();
 
-            if(opMode.primary.AOnce()) {
+            if(primary.AOnce())
                 precisionMode = precisionMode == 1 ? precisionPercentage : 1;
-            }
+
+            if(primary.YOnce())
+                mecanumDrive.setPoseEstimate(new Pose2d(mecanumDrive.getPoseEstimate().vec(), 0.0));
 
             if(primary.BOnce())
-                currentDriveMode = currentDriveMode == DriveMode.NORMAL_ROBOT_CENTRIC ? DriveMode.NORMAL_FIELD_CENTRIC : DriveMode.NORMAL_ROBOT_CENTRIC;
+                currentDriveMode = currentDriveMode == DriveMode.NORMAL_FIELD_CENTRIC ? DriveMode.NORMAL_ROBOT_CENTRIC : DriveMode.NORMAL_FIELD_CENTRIC;
+
+            if(primary.dpadRightOnce()) {
+                armOffset -= 0.02;
+            } else if(primary.dpadDownOnce()) {
+                armOffset += 0.02;
+            } else if(primary.dpadUpOnce()) {
+                armPosition = Configuration.ServoPosition.PLACE;
+                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
+            }
 
             switch (currentDriveMode) {
                 case NORMAL_ROBOT_CENTRIC:
@@ -124,100 +150,264 @@ public class Manual extends RobotHardware {
                             -gamepad1.left_stick_x * lateralSpeed * precisionMode);
 
                     Vector2d robotFrameInput = fieldFrameInput
-                            .rotated(-poseEstimate.getHeading());
+                            .rotated(-poseEstimate.getHeading())
+                            .rotated(Math.toRadians(AutoOpmode.robotStartPos.equals(StartPosition.FAR) ? (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (270.0) : (90.0)) : (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (90.0) : (270.0))));
+//                            .rotated(Math.toRadians(AutoOpmode.robotColor.equals(AllianceColor.RED) ? 90.0 : 270.0));
                     driveDirection = new Pose2d(
                             robotFrameInput.getX(), robotFrameInput.getY(),
                             -primary.right_stick_x * rotationSpeed * precisionMode
                     );
+                    theta = mecanumDrive.getPoseEstimate().getHeading();
                     break;
-            }
-
-            if(currentDriveMode != DriveMode.NORMAL_FIELD_CENTRIC && Math.abs(primary.right_stick_x) > 0.1) {
-                currentDriveMode = DriveMode.NORMAL_ROBOT_CENTRIC;
-            }
-            // Prevent slides from being powered if they are at a zero-like position.
-            if(setpoint > 10.0) {
-                motorUtility.setPower(Motors.SLIDE_LEFT, (motorUtility.getEncoderValue(Motors.SLIDE_LEFT) > setpoint + 15 ? reverseScale : 0.75) * pidController.update(setpoint, motorUtility.getEncoderValue(Motors.SLIDE_LEFT), statePeriod.seconds()));
-                motorUtility.setPower(Motors.SLIDE_RIGHT, (motorUtility.getEncoderValue(Motors.SLIDE_RIGHT) > setpoint + 15 ? reverseScale : 0.75) * pidController.update(setpoint, motorUtility.getEncoderValue(Motors.SLIDE_RIGHT), statePeriod.seconds()));
             }
 
             mecanumDrive.setWeightedDrivePower(driveDirection);
 
-            if(primary.X() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Cone_Align.class)) {
-                stateMachine.changeState(TURRET, new Turret_Cone_Align());
-            } else if(!stateMachine.getCurrentStateByType(TURRET).equals(Turret_Stop.class) && !primary.X()) {
-                stateMachine.changeState(TURRET, new Turret_Stop());
+            if(secondary.Y() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Cone_Align_Bang.class)) {
+                stateMachine.changeState(TURRET, new Turret_Cone_Align_Bang());
+            } else if(!stateMachine.getCurrentStateByType(TURRET).equals(Turret_Manual.class) && !secondary.Y() && !stateMachine.getCurrentStateByType(TURRET).equals(Turret_Angle.class)) {
+                stateMachine.changeState(TURRET, new Turret_Manual());
             }
 
-            if(secondary.left_trigger > Configuration.deadzone) {
-                servoUtility.setPower(ContinuousServo.CLOSE_INTAKE, 1.0);
-                servoUtility.setPower(ContinuousServo.FAR_INTAKE, 1.0);
-            } else if(secondary.right_trigger > Configuration.deadzone) {
-                servoUtility.setPower(ContinuousServo.CLOSE_INTAKE, -1.0);
-                servoUtility.setPower(ContinuousServo.FAR_INTAKE, -1.0);
-            } else if(!armPosition.equals(Configuration.ServoPosition.HOLD) && hasStarted) {
-                servoUtility.setPower(ContinuousServo.CLOSE_INTAKE, 0.5);
-                servoUtility.setPower(ContinuousServo.FAR_INTAKE, 0.5);
-            } else {
-                servoUtility.setPower(ContinuousServo.CLOSE_INTAKE, 0.0);
-                servoUtility.setPower(ContinuousServo.FAR_INTAKE, 0.0);
-            }
+            if(secondary.rightTriggerOnce())
+                clawGrab = clawGrab == CLAW_CLOSED ? CLAW_OPEN : CLAW_CLOSED;
 
-            motorUtility.setPower(Motors.TURRET, secondary.left_stick_x * turretSpeed);
-
-            setpoint += -secondary.right_stick_y * slideMultiplier;
+            servoUtility.setAngle(Servos.CLAW, clawGrab);
 
             if(secondary.AOnce()) {
-                setpoint = Configuration.INTAKE_POS;
-            } else if(secondary.BOnce()) {
-                setpoint = Configuration.MEDIUM_POS;
+                stateMachine.changeState(SLIDE, new Slide_Position(Configuration.LOW_POS));
             } else if(secondary.XOnce()) {
-                setpoint = Configuration.HIGH_POS;
-            } else if(secondary.YOnce()) {
-                setpoint = Configuration.LOW_POS;
+                stateMachine.changeState(SLIDE, new Slide_Position(Configuration.HIGH_POS));
             }
 
-            if(secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
-                switch (armPosition) {
-                    case START:
-                        armPosition = Configuration.ServoPosition.HOLD;
-                        break;
-                    case HOLD:
-                        armPosition = Configuration.ServoPosition.INTERMEDIARY;
-                        break;
-                    case INTERMEDIARY:
-                        armPosition = Configuration.ServoPosition.INTAKE;
+            if(secondary.BOnce()) {
+                CombinedTracker.trackType = CombinedTracker.trackType.equals(TrackType.CONE) ? TrackType.POLE : TrackType.CONE;
+            }
+            telemetry.addData("Tracking:", CombinedTracker.trackType.name());
+
+            if(secondary.left_trigger > deadzone) {
+                if(visionDetection == null)
+                    return;
+                CombinedTracker l = visionDetection.getLeftPipeline(), r = visionDetection.getRightPipeline();
+                if(l == null || r == null)
+                    return;
+                // alpha
+                double triangleRightAngle = 90 - r.getCameraAngle() + r.getObjectAngle();
+                // beta
+                double triangleLeftAngle = 90 + l.getCameraAngle() - l.getObjectAngle();
+
+                double gamma = 180 - triangleLeftAngle - triangleRightAngle,
+//                rightCameraDist = Math.sin(Math.toRadians(triangleLeftAngle)) * ((Configuration.CAMERA_DISTANCE_IN)/(Math.toRadians(gamma))),
+                        leftCameraDist = Math.sin(Math.toRadians(triangleRightAngle)) *
+                                ((Configuration.CAMERA_DISTANCE_IN)/Math.sin(Math.toRadians(gamma))),
+                        frontDist = Math.abs(leftCameraDist * Math.sin(Math.toRadians(triangleLeftAngle)));
+                frontDist = CombinedTracker.trackType.equals(TrackType.CONE) ? frontDist + Configuration.ARM_CONE_OFFSET_IN : frontDist;
+                double pos = Double.parseDouble(RobotHardware.df.format((Math.toDegrees(Math.acos((frontDist - 3.0)/14.0)) + 90.0) / 180.0));
+
+                try {
+                    servoUtility.setAngle(Servos.LEFT_ARM, Range.clip((pos + armOffset), 0.0, 1.0));
+                    servoUtility.setAngle(Servos.RIGHT_ARM, Range.clip(pos + armOffset, 0.0, 1.0));
+                    prevArmPos = Range.clip(pos + armOffset, 0.0, 1.0);
+                } catch(IllegalArgumentException ignore) {
+                    servoUtility.setAngle(Servos.LEFT_ARM, prevArmPos);
+                    servoUtility.setAngle(Servos.RIGHT_ARM, prevArmPos);
                 }
-                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
-            } else if(secondary.leftBumperOnce() && (!armPosition.equals(Configuration.ServoPosition.HOLD) || armPosition.equals(Configuration.ServoPosition.START))) {
-                switch (armPosition) {
-                    case INTERMEDIARY:
-                        armPosition = Configuration.ServoPosition.HOLD;
-                        break;
-                    case INTAKE:
-                        armPosition = Configuration.ServoPosition.INTERMEDIARY;
+
+                armPosition = Configuration.ServoPosition.NONE;
+
+                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(prevArmPos, prevArmPos));
+            } else if(secondary.leftStickButtonOnce()) {
+                armPosition = Configuration.ServoPosition.NONE;
+                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(Configuration.ServoPosition.OTHER));
+            } else {
+                if (secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
+                    switch (armPosition) {
+                        case START:
+                            armPosition = Configuration.ServoPosition.TELEOP_HOLD;
+                            break;
+                        case TELEOP_HOLD:
+                            armPosition = Configuration.ServoPosition.INTERMEDIARY;
+                            break;
+                        case NONE:
+                        case INTERMEDIARY:
+                            armPosition = Configuration.ServoPosition.INTAKE;
+                    }
+                    stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
+                } else if (secondary.leftBumperOnce() && !armPosition.equals(Configuration.ServoPosition.TELEOP_HOLD)) {
+                    switch (armPosition) {
+                        case NONE:
+                        case INTERMEDIARY:
+                            armPosition = Configuration.ServoPosition.TELEOP_HOLD;
+                            break;
+                        case INTAKE:
+                            armPosition = Configuration.ServoPosition.INTERMEDIARY;
+                    }
+                    stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
                 }
-                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
+            }
+
+//            double distance = getDistance(RevDistanceSensor.CLAW_DISTANCE);
+//            telemetry.addData("Distance", distance);
+//            if(distance < Configuration.CLAW_DISTANCE_IN && CombinedTracker.trackType.equals(TrackType.CONE) && armPosition.equals(Configuration.ServoPosition.INTAKE)) {
+//                clawGrab = CLAW_CLOSED;
+//            }
+
+            if(secondary.dpadUpOnce()) {
+                stateMachine.changeState(TURRET, new Turret_Angle(0.0));
+            } else if(secondary.dpadRightOnce()) {
+                stateMachine.changeState(TURRET, new Turret_Angle(-90.0));
+            } else if(secondary.dpadDownOnce()) {
+                stateMachine.changeState(TURRET, new Turret_Angle(180.0));
+            } else if(secondary.dpadLeftOnce()) {
+                stateMachine.changeState(TURRET, new Turret_Angle(90.0));
+            }
+
+            if(secondary.leftTriggerOnce()) {
+                contourIndex++;
+            } else if(secondary.rightStickButtonOnce()) {
+                contourIndex = 0;
             }
         }
     }
 
-    class Horizontal_Arm_Position extends Executive.StateBase<Manual> {
-        private final Configuration.ServoPosition servoPosition;
-        Horizontal_Arm_Position(Configuration.ServoPosition servoPosition) {
-            this.servoPosition = servoPosition;
+    class Slide_Position extends Executive.StateBase<Manual> {
+        private final double setpoint;
+        private PIDFController controllerLeft, controllerRight;
+        private MotionProfile activeProfile;
+        private double profileStart;
+
+        Slide_Position(double setpoint) {
+            this.setpoint = setpoint;
+        }
+
+        @Override
+        public void init(Executive.StateMachine<Manual> stateMachine) {
+            super.init(stateMachine);
+            controllerLeft = opMode.motorUtility.getController(Motors.SLIDE_LEFT);
+            controllerRight = opMode.motorUtility.getController(Motors.SLIDE_RIGHT);
+            profileStart = stateTimer.seconds();
+            MotionState start = new MotionState(opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT), 0, 0, 0);
+            MotionState goal = new MotionState(setpoint, 0, 0, 0);
+            activeProfile = MotionProfileGenerator.generateSimpleMotionProfile(start, goal, 1800, 1200);
         }
 
         @Override
         public void update() {
             super.update();
-            servoUtility.setAngle(Servos.LEFT_ARM, servoPosition.getLeft());
-            servoUtility.setAngle(Servos.RIGHT_ARM, servoPosition.getRight());
+
+            if(Math.abs(secondary.left_stick_y) > 0.2) {
+                stateMachine.changeState(SLIDE, new Slide_Manual());
+                profileStart = 0;
+                activeProfile = null;
+                return;
+            }
+
+            double profileTime = stateTimer.seconds() - profileStart;
+
+            MotionState motionState = activeProfile.get(profileTime);
+
+            controllerLeft.setTargetPosition(motionState.getX());
+            controllerLeft.setTargetVelocity(motionState.getV());
+            controllerLeft.setTargetAcceleration(motionState.getA());
+
+            controllerRight.setTargetPosition(motionState.getX());
+            controllerRight.setTargetVelocity(motionState.getV());
+            controllerRight.setTargetAcceleration(motionState.getA());
+
+
+            opMode.motorUtility.setPower(Motors.SLIDE_RIGHT, controllerRight.update(opMode.motorUtility.getEncoderValue(Motors.SLIDE_RIGHT), opMode.motorUtility.getVelocity(Motors.SLIDE_RIGHT)));
+            opMode.motorUtility.setPower(Motors.SLIDE_LEFT, controllerLeft.update(opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT), opMode.motorUtility.getVelocity(Motors.SLIDE_LEFT)));
+
+            isDone = (stateTimer.seconds() - profileStart) > activeProfile.duration();
+        }
+    }
+
+    class Slide_Manual extends Executive.StateBase<Manual> {
+        @Override
+        public void update() {
+            super.update();
+            if(Math.abs(secondary.left_stick_y) < 0.2) {
+                stateMachine.changeState(SLIDE, new Slide_Position(motorUtility.getEncoderValue(Motors.SLIDE_LEFT)));
+                return;
+            }
+
+            if(-secondary.left_stick_y > 0.2 && opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT) <= 100)
+                stateMachine.changeState(SLIDE, new Slide_Position(motorUtility.getEncoderValue(Motors.SLIDE_LEFT)));
+
+            opMode.motorUtility.setPower(Motors.SLIDE_RIGHT, -secondary.left_stick_y < 0 ? -secondary.left_stick_y * liftDownSpeed : -secondary.left_stick_y * liftSpeed);
+            opMode.motorUtility.setPower(Motors.SLIDE_LEFT, -secondary.left_stick_y < 0 ? -secondary.left_stick_y * liftDownSpeed : -secondary.left_stick_y * liftSpeed);
+        }
+    }
+
+    class Horizontal_Arm_Position extends Executive.StateBase<Manual> {
+        private final double l, r;
+        Horizontal_Arm_Position(Configuration.ServoPosition servoPosition) {
+            l = servoPosition.getLeft();
+            r = servoPosition.getRight();
+        }
+
+        Horizontal_Arm_Position(double l, double r) {
+            this.l = l;
+            this.r = r;
+        }
+
+        @Override
+        public void update() {
+            super.update();
+            servoUtility.setAngle(Servos.LEFT_ARM, l);
+            servoUtility.setAngle(Servos.RIGHT_ARM, r);
         }
     }
 
     //ToDo Implement distance estimation + driving & grabbing cone autonomously
     class Turret_Cone_Align extends Executive.StateBase<Manual> {
+
+        @Override
+        public void update() {
+            super.update();
+            PIDFController controller = motorUtility.getController(Motors.TURRET);
+            if(controller == null)
+                return;
+
+            //ToDo See if a motion profile is necessary
+            double turn = calculateTurn() * turretMultiplier;
+            
+            controller.setTargetPosition(motorUtility.getEncoderValue(Motors.TURRET) + (turn * Configuration.TURRET_TICKS_PER_DEGREE));
+            controller.setTargetAcceleration(turretA);
+            controller.setTargetVelocity(turretV);
+
+            motorUtility.setPower(Motors.TURRET, controller.update(motorUtility.getEncoderValue(Motors.TURRET), motorUtility.getVelocity(Motors.TURRET)));
+
+            telemetry.addData("Turret Turn", turn);
+        }
+
+        private double calculateTurn() {
+            if(visionDetection == null)
+                return 0.0;
+
+            visionDetection.getLeftPipeline().setContourIndex(contourIndex);
+
+            Rect r = visionDetection.getLeftPipeline().getBiggestCone();
+
+            if(!(r.area() > 10))
+                return 0.0;
+
+            double coneCenter = r.x + (r.width/2.0);
+
+            if(coneCenter > 312.0 && coneCenter < 328.0)
+                return 0.0;
+
+            double direction = coneCenter < 320.0 ? 1.0 : -1.0;
+            double turnDegrees = Math.abs(coneCenter - 320) / 9.0;
+            return turnDegrees * direction;
+        }
+
+        private double wrapAngle(double angle) {
+            return angle > 180 ? -(angle - 180) : (angle < -180 ? -(angle + 180) : angle);
+        }
+    }
+
+    class Turret_Cone_Align_Bang extends Executive.StateBase<Manual> {
 
         @Override
         public void update() {
@@ -229,27 +419,52 @@ public class Manual extends RobotHardware {
             if(visionDetection == null)
                 return 0.0;
 
-            Rect r = visionDetection.getPipeline().getBiggestCone();
 
-            if(!(r.area() > 10))
+            Rect r = opMode.visionDetection.getRightPipeline().getBiggestCone();
+            Rect l = opMode.visionDetection.getLeftPipeline().getBiggestCone();
+
+            if(!(r.area() > 80))
                 return 0.0;
 
-            double coneCenter = r.x + (r.width/2.0);
-            // Return if the cone is within tolerances (cone center is within 40 px of camera center)
-            if(coneCenter > 318.0 && coneCenter < 322.0)
+            double coneCenterL = l.x + (l.width/2.0), coneCenterR = r.x + (r.width/2.0);
+            double direction = coneCenterL < 320 - coneCenterR ? 1.0 : -1.0;
+            double turn = Math.abs(coneCenterL - (320 - coneCenterR)) / 200.0;
+
+            if(Math.abs(coneCenterL - (320 - coneCenterR)) < 5)
                 return 0.0;
 
-            double direction = coneCenter < 300.0 ? -1.0 : 1.0;
-            double turn = Math.abs(coneCenter - 320) / 320.0;
             return Range.clip(turn * turretMultiplier, 0.0, 1.0) * direction;
         }
     }
 
-    class Turret_Stop extends Executive.StateBase<Manual> {
+    class Turret_Angle extends Executive.StateBase<Manual> {
+        private double angle;
+
+        Turret_Angle(double angle) {
+            this.angle = angle;
+        }
+
         @Override
         public void init(Executive.StateMachine<Manual> stateMachine) {
             super.init(stateMachine);
-            motorUtility.setPower(Motors.TURRET, 0.0);
+            angle = angle * Configuration.TURRET_TICKS_PER_DEGREE;
+        }
+
+        @Override
+        public void update() {
+            super.update();
+            if(Math.abs(secondary.right_stick_x) > 0.3)
+                stateMachine.changeState(TURRET, new Turret_Manual());
+
+            isDone = motorUtility.goToPosition(Motors.TURRET, (int) angle, 1.0);
+        }
+    }
+
+    class Turret_Manual extends Executive.StateBase<Manual> {
+        @Override
+        public void update() {
+            super.update();
+            motorUtility.setPower(Motors.TURRET, (-secondary.right_stick_x * Math.abs(secondary.right_stick_x)) * turretSpeed);
         }
     }
 
@@ -262,7 +477,6 @@ public class Manual extends RobotHardware {
         telemetry.addData("Heading:             ", df.format(Math.toDegrees(poseEstimate.getHeading())));
         if(packet != null) {
             packet.put("Precision mode:      ", df.format(precisionMode));
-            packet.put("Drive speed:         ", df.format(driveSpeed));
             packet.put("Precision speed:     ", df.format(precisionPercentage));
             packet.put("Loop time:           ", df_precise.format(period.getAveragePeriodSec()) + "s");
         }

@@ -1,6 +1,19 @@
 package org.firstinspires.ftc.teamcode.Utility.Odometry;
 
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_ACCEL;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_ANG_ACCEL;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_ANG_VEL;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_VEL;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MOTOR_VELO_PID;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.RUN_USING_ENCODER;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.TRACK_WIDTH;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.encoderTicksToInches;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kA;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kStatic;
+import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kV;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.canvas.Canvas;
@@ -32,7 +45,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
-import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.teamcode.HardwareTypes.IMU;
@@ -48,18 +60,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_ACCEL;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_ANG_ACCEL;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_ANG_VEL;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MAX_VEL;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.MOTOR_VELO_PID;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.RUN_USING_ENCODER;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.TRACK_WIDTH;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.encoderTicksToInches;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kA;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kStatic;
-import static org.firstinspires.ftc.teamcode.Utility.Odometry.DriveConstants.kV;
-
 /*
  * Simple mecanum drive hardware implementation for REV hardware.
  */
@@ -68,7 +68,7 @@ public class SampleMecanumDrive extends MecanumDrive {
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(8, 0, 0);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(8, 0, 0);
 
-    public static double LATERAL_MULTIPLIER = 1.1476;
+    public static double LATERAL_MULTIPLIER = 1.0;
 
     public static double VX_WEIGHT = 1;
     public static double VY_WEIGHT = 1;
@@ -179,6 +179,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         // If desired, use setLocalizer() to change the localization method
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
 //        setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap));
+        setLocalizer(new TwoWheelTrackingLocalizer(hardwareMap, this));
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {
@@ -432,6 +433,12 @@ public class SampleMecanumDrive extends MecanumDrive {
     public double getRawExternalHeading() {
         return imu.getAngularOrientation().firstAngle;
 //        return 0;
+    }
+
+    @Nullable
+    @Override
+    public Double getExternalHeadingVelocity() {
+        return (double) imu.getAngularVelocity().xRotationRate;
     }
 
     double getBatteryVoltage(HardwareMap hardwareMap) {

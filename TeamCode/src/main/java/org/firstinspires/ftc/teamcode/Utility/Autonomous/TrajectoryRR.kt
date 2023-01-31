@@ -10,15 +10,33 @@ import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive
 
 class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
     val drive: SampleMecanumDrive = sampleMecanumDrive
-    // Start positions (Blue side)
-    val startAudience = Pose2d(-60.0,31.75,0.0.toRadians)
-    val startFar = Pose2d(-62.5,-31.75,0.0.toRadians)
+    // Start positions (Red side)
+    var startAudience = Pose2d(-35.0,-61.75,90.0.toRadians)
+    var startFar = Pose2d(35.25,-61.75,90.0.toRadians)
 
 
     // Sleeve trajectories, retrieved through the getSleeveTrajectory() function.
-    private var trajectoryStartToSignalParkFar: Trajectory? = null
-    private var trajectoryStartToSignalParkMiddle: Trajectory? = null
-    private var trajectoryStartToSignalParkAudience: Trajectory? = null
+    private var trajectoryAudienceStartToSignalParkFar: Trajectory? = null
+    private var trajectoryAudienceStartToSignalParkMiddle: Trajectory? = null
+    private var trajectoryAudienceStartToSignalParkAudience: Trajectory? = null
+    private var trajectoryFarStartToSignalParkFar: Trajectory? = null
+    private var trajectoryFarStartToSignalParkMiddle: Trajectory? = null
+    private var trajectoryFarStartToSignalParkAudience: Trajectory? = null
+
+    private var trajectoryAudienceHighPoleToSignalParkFar: Trajectory? = null
+    private var trajectoryAudienceHighPoleToSignalParkMiddle: Trajectory? = null
+    private var trajectoryAudienceHighPoleToSignalParkAudience: Trajectory? = null
+    private var trajectoryFarHighPoleToSignalParkFar: Trajectory? = null
+    private var trajectoryFarHighPoleToSignalParkMiddle: Trajectory? = null
+    private var trajectoryFarHighPoleToSignalParkAudience: Trajectory? = null
+    var trajectoryAudienceStartToHighPole: Trajectory? = null
+    var trajectoryAudienceHighPoleToStack: Trajectory? = null
+    var trajectoryAudienceStackToHighPole: Trajectory? = null
+    var trajectoryAudienceSlowStackGrab: Trajectory? = null
+    var trajectoryFarStartToHighPole: Trajectory? = null
+    var trajectoryFarHighPoleToStack: Trajectory? = null
+    var trajectoryFarStackToHighPole: Trajectory? = null
+    var trajectoryFarSlowStackGrab: Trajectory? = null
 
     private var velocityConstraint: TrajectoryVelocityConstraint? = null
     private var accelerationConstraint: TrajectoryAccelerationConstraint? = null
@@ -45,34 +63,265 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
     }
 
     private fun buildTrajectories(color: AllianceColor) {
+        when(color) {
+            AllianceColor.BLUE -> {
 
-        this.trajectoryStartToSignalParkAudience =
-            trajectoryBuilder(startAudience, 120.0)
-                .splineToConstantHeading(Vector2d(-56.0,55.0), (0.0).toRadians)
-                .splineToConstantHeading(Vector2d(-24.0,55.0), 0.0.toRadians)
-                .build()
+                startAudience = Pose2d(-35.0,61.75, 0.0.toRadians)
+                startFar = Pose2d(35.25,61.75, 0.0.toRadians)
 
-        this.trajectoryStartToSignalParkMiddle =
-                trajectoryBuilder(startAudience, 0.0)
-                    .splineToConstantHeading(Vector2d(-26.0,35.0), (0.0).toRadians)
+                val audienceStartToHighPole = trajectoryBuilder(startAudience, 270.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-35.0, 13.0), 270.0.toRadians)
                     .build()
+                this.trajectoryAudienceStartToHighPole = audienceStartToHighPole
 
-        this.trajectoryStartToSignalParkFar =
-            trajectoryBuilder(startAudience, 200.0)
-                .splineToConstantHeading(Vector2d(-56.0,12.0), (0.0).toRadians)
-                .splineToConstantHeading(Vector2d(-26.0,12.0), 0.0.toRadians)
-                .build()
+                val audienceHighPoleToStack = trajectoryBuilder(audienceStartToHighPole.end(), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-46.0, 13.0), 180.0.toRadians)
+                    .build()
+                this.trajectoryAudienceHighPoleToStack = audienceHighPoleToStack
+
+                val audienceSlowStackGrab = trajectoryBuilder(audienceHighPoleToStack.end(), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-53.5, 13.0), 180.0.toRadians)
+                    .build()
+                this.trajectoryAudienceSlowStackGrab = audienceSlowStackGrab
+
+                val audienceStackToHighPole = trajectoryBuilder(audienceSlowStackGrab.end(),0.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-35.0, 13.0), 0.0.toRadians)
+                    .build()
+                this.trajectoryAudienceStackToHighPole = audienceStackToHighPole
+
+                this.trajectoryAudienceHighPoleToSignalParkAudience =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,30.0), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-59.5,34.5), 180.0.toRadians)
+                        .build()
+
+                this.trajectoryAudienceHighPoleToSignalParkMiddle =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,30.0), (90.0).toRadians)
+                        .build()
+
+                this.trajectoryAudienceHighPoleToSignalParkFar =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,30.0), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-11.5,34.5), 0.0.toRadians)
+                        .build()
+
+                this.trajectoryAudienceStartToSignalParkAudience =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,30.0), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-59.5,34.5), 180.0.toRadians)
+                        .build()
+
+                this.trajectoryAudienceStartToSignalParkMiddle =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,30.0), (90.0).toRadians)
+                        .build()
+
+                this.trajectoryAudienceStartToSignalParkFar =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,30.0), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-11.5,34.5), 0.0.toRadians)
+                        .build()
+
+                val farStartToHighPole = trajectoryBuilder(startFar, 270.0.toRadians)
+                    .splineToConstantHeading(Vector2d(35.0, 13.0), 270.0.toRadians)
+                    .build()
+                this.trajectoryFarStartToHighPole = farStartToHighPole
+
+                val farHighPoleToStack = trajectoryBuilder(farStartToHighPole.end(), 0.0.toRadians)
+                    .splineToConstantHeading(Vector2d(45.0, 13.0), 0.0.toRadians)
+                    .build()
+                this.trajectoryFarHighPoleToStack = farHighPoleToStack
+
+                val farSlowStackGrab = trajectoryBuilder(farHighPoleToStack.end(), 0.0.toRadians)
+                    .splineToConstantHeading(Vector2d(53.5, 13.0), 0.0.toRadians)
+                    .build()
+                this.trajectoryFarSlowStackGrab = farSlowStackGrab
+
+                val farStackToHighPole = trajectoryBuilder(farSlowStackGrab.end(),180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(35.0, 13.0), 180.0.toRadians)
+                    .build()
+                this.trajectoryFarStackToHighPole = farStackToHighPole
+
+                this.trajectoryFarHighPoleToSignalParkAudience =
+                    trajectoryBuilder(farStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(35.0,30.0), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(11.5,34.5), 180.0.toRadians)
+                        .build()
+
+                this.trajectoryFarHighPoleToSignalParkMiddle =
+                    trajectoryBuilder(farStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(35.0,30.0), (90.0).toRadians)
+                        .build()
+
+                this.trajectoryFarHighPoleToSignalParkFar =
+                    trajectoryBuilder(farStackToHighPole.end(), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(35.0,30.0), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(59.5,34.5), 0.0.toRadians)
+                        .build()
+
+                this.trajectoryFarStartToSignalParkAudience =
+                    trajectoryBuilder(startFar, 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(35.0,40.0), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(59.5,34.5), 0.0.toRadians)
+                        .build()
+
+                this.trajectoryFarStartToSignalParkMiddle =
+                    trajectoryBuilder(startFar, 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(35.0,30.0), (270.0).toRadians)
+                        .build()
+
+                this.trajectoryFarStartToSignalParkFar =
+                    trajectoryBuilder(startFar, 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(35.0,40.0), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(11.5,34.5), 180.0.toRadians)
+                        .build()
+            } else -> {
+                startAudience = Pose2d(-35.0,-61.75,90.0.toRadians)
+                startFar = Pose2d(35.25,-61.75,90.0.toRadians)
+
+                this.trajectoryAudienceStartToSignalParkAudience =
+                    trajectoryBuilder(startAudience, 180.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-59.5,-58.5), (90.0).toRadians)
+                        .splineToConstantHeading(Vector2d(-59.5,-30.0), 90.0.toRadians)
+                        .build()
+
+                this.trajectoryAudienceStartToSignalParkMiddle =
+                    trajectoryBuilder(startAudience, 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,-30.0), (90.0).toRadians)
+                        .build()
+
+                this.trajectoryAudienceStartToSignalParkFar =
+                    trajectoryBuilder(startAudience, 0.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-11.5,-58.5), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-11.5,-30.0), 90.0.toRadians)
+                        .build()
+            
+                // High Pole Autonomous Trajectories
+
+                val audienceStartToHighPole = trajectoryBuilder(startAudience, 90.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-35.0, -17.0), 90.0.toRadians)
+                    .splineToSplineHeading(Pose2d(-35.0, -13.0, 0.0.toRadians), 90.0.toRadians)
+                    .build()
+                this.trajectoryAudienceStartToHighPole = audienceStartToHighPole
+
+                val audienceHighPoleToStack = trajectoryBuilder(audienceStartToHighPole.end(), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-45.0, -13.0), 180.0.toRadians)
+                    .build()
+                this.trajectoryAudienceHighPoleToStack = audienceHighPoleToStack
+
+                val audienceSlowStackGrab = trajectoryBuilder(audienceHighPoleToStack.end(), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-53.5, -13.0), 180.0.toRadians, slowVelocityConstraint, slowAccelerationConstraint)
+                    .build()
+                this.trajectoryAudienceSlowStackGrab = audienceSlowStackGrab
+
+                val audienceStackToHighPole = trajectoryBuilder(audienceSlowStackGrab.end(),0.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-38.0, -13.0), 0.0.toRadians)
+                    .build()
+                this.trajectoryAudienceStackToHighPole = audienceStackToHighPole
+
+                this.trajectoryAudienceHighPoleToSignalParkAudience =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,-32.0), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-59.5,-34.5), 180.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-59.5,-27.5), 180.0.toRadians)
+                        .build()
+    
+                this.trajectoryAudienceHighPoleToSignalParkMiddle =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,-32.0), (270.0).toRadians)
+                        .build()
+    
+                this.trajectoryAudienceHighPoleToSignalParkFar =
+                    trajectoryBuilder(audienceStackToHighPole.end(), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-35.0,-32.0), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-11.5,-34.5), 0.0.toRadians)
+                        .splineToConstantHeading(Vector2d(-11.5,-27.5), 0.0.toRadians)
+                        .build()
+
+                val farStartToHighPole = trajectoryBuilder(startFar, 90.0.toRadians, )
+                    .splineToConstantHeading(Vector2d(35.0, -17.0), 90.0.toRadians)
+                    .splineToSplineHeading(Pose2d(35.0, -13.0, 0.0.toRadians), 90.0.toRadians)
+                    .build()
+                this.trajectoryFarStartToHighPole = farStartToHighPole
+        
+                val farHighPoleToStack = trajectoryBuilder(farStartToHighPole.end(), 0.0.toRadians, )
+                    .splineToConstantHeading(Vector2d(45.0, -13.0), 0.0.toRadians)
+                    .build()
+                this.trajectoryFarHighPoleToStack = farHighPoleToStack
+        
+                val farSlowStackGrab = trajectoryBuilder(farHighPoleToStack.end(), 0.0.toRadians, )
+                    .splineToConstantHeading(Vector2d(53.5, -13.0), 0.0.toRadians)
+                    .build()
+                this.trajectoryFarSlowStackGrab = farSlowStackGrab
+        
+                val farStackToHighPole = trajectoryBuilder(farSlowStackGrab.end(),180.0.toRadians, )
+                    .splineToConstantHeading(Vector2d(35.0, -13.0), 180.0.toRadians)
+                    .build()
+                this.trajectoryFarStackToHighPole = farStackToHighPole
+        
+                this.trajectoryFarHighPoleToSignalParkAudience =
+                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians, )
+                        .splineToConstantHeading(Vector2d(35.0,-30.0), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(11.5,-34.5), 180.0.toRadians)
+                        .build()
+        
+                this.trajectoryFarHighPoleToSignalParkMiddle =
+                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians, )
+                        .splineToConstantHeading(Vector2d(35.0,-30.0), (270.0).toRadians)
+                        .build()
+        
+                this.trajectoryFarHighPoleToSignalParkFar =
+                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians, )
+                        .splineToConstantHeading(Vector2d(35.0,-30.0), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(59.5,-34.5), 0.0.toRadians)
+                        .build()
+        
+                this.trajectoryFarStartToSignalParkAudience =
+                    trajectoryBuilder(startFar, 90.0.toRadians, )
+                        .splineToConstantHeading(Vector2d(35.0,-40.0), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(59.5,-34.5), 0.0.toRadians)
+                        .build()
+        
+                this.trajectoryFarStartToSignalParkMiddle =
+                    trajectoryBuilder(startFar, 90.0.toRadians, )
+                        .splineToConstantHeading(Vector2d(35.0,-30.0), (90.0).toRadians)
+                        .build()
+        
+                this.trajectoryFarStartToSignalParkFar =
+                    trajectoryBuilder(startFar, 90.0.toRadians, )
+                        .splineToConstantHeading(Vector2d(35.0,-40.0), 90.0.toRadians)
+                        .splineToConstantHeading(Vector2d(11.5,-34.5), 180.0.toRadians)
+                        .build()
+            }
+        }
     }
 
     fun getSleeveTrajectory(allianceColor: AllianceColor, signal: Signal): Trajectory? {
-        val x = when (signal) {
-            Signal.GREEN -> (trajectoryStartToSignalParkAudience)
-            Signal.BLUE -> (trajectoryStartToSignalParkMiddle)
-            Signal.YELLOW -> (trajectoryStartToSignalParkFar)
-            else -> (trajectoryStartToSignalParkMiddle)
+        return when (signal) {
+            Signal.LEFT -> if (allianceColor == AllianceColor.BLUE) (trajectoryAudienceStartToSignalParkFar) else (trajectoryAudienceStartToSignalParkAudience)
+            Signal.MIDDLE -> (trajectoryAudienceStartToSignalParkMiddle)
+            Signal.RIGHT -> if (allianceColor == AllianceColor.BLUE) (trajectoryAudienceStartToSignalParkAudience) else (trajectoryAudienceStartToSignalParkFar)
+            else -> (trajectoryAudienceStartToSignalParkMiddle)
         }
+    }
 
-        return x
+    fun getAudienceHighPoleSleeveTrajectory(allianceColor: AllianceColor, signal: Signal): Trajectory? {
+        return when (signal) {
+            Signal.LEFT -> if (allianceColor == AllianceColor.BLUE) (trajectoryAudienceHighPoleToSignalParkFar) else (trajectoryAudienceHighPoleToSignalParkAudience)
+            Signal.MIDDLE -> (trajectoryAudienceHighPoleToSignalParkMiddle)
+            Signal.RIGHT -> if (allianceColor == AllianceColor.BLUE) (trajectoryAudienceHighPoleToSignalParkAudience) else (trajectoryAudienceHighPoleToSignalParkFar)
+            else -> (trajectoryAudienceHighPoleToSignalParkMiddle)
+        }
+    }
+
+    fun getFarHighPoleSleeveTrajectory(allianceColor: AllianceColor, signal: Signal): Trajectory? {
+        return when (signal) {
+            Signal.LEFT -> if (allianceColor == AllianceColor.BLUE) (trajectoryFarHighPoleToSignalParkFar) else (trajectoryFarHighPoleToSignalParkAudience)
+            Signal.MIDDLE -> (trajectoryFarHighPoleToSignalParkMiddle)
+            Signal.RIGHT -> if (allianceColor == AllianceColor.BLUE) (trajectoryFarHighPoleToSignalParkAudience) else (trajectoryFarHighPoleToSignalParkFar)
+            else -> (trajectoryFarHighPoleToSignalParkMiddle)
+        }
     }
 
     fun toVector2d(pose: Pose2d): Vector2d {
