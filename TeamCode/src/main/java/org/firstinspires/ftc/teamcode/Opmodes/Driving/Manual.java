@@ -4,7 +4,6 @@ import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateM
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.SLIDE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.TURRET;
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.RobotStateContext.far;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_CLOSED;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_OPEN;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.deadzone;
@@ -25,6 +24,7 @@ import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.StartPosition;
 import org.firstinspires.ftc.teamcode.Utility.Configuration;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
@@ -51,7 +51,7 @@ public class Manual extends RobotHardware {
 
     double theta = Math.toRadians(0.0);
 
-    public static Configuration.ServoPosition armPosition = Configuration.ServoPosition.HOLD;
+    public static Configuration.ServoPosition armPosition = Configuration.ServoPosition.TELEOP_HOLD;
 
     public static int contourIndex = 0;
 
@@ -80,7 +80,7 @@ public class Manual extends RobotHardware {
     @Override
     public void init() {
         super.init();
-        armPosition = Configuration.ServoPosition.HOLD;
+        armPosition = Configuration.ServoPosition.TELEOP_HOLD;
 
         stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
         stateMachine.init();
@@ -151,7 +151,7 @@ public class Manual extends RobotHardware {
 
                     Vector2d robotFrameInput = fieldFrameInput
                             .rotated(-poseEstimate.getHeading())
-                            .rotated(Math.toRadians(far ? (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (270.0) : (90.0)) : (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (90.0) : (270.0))));
+                            .rotated(Math.toRadians(AutoOpmode.robotStartPos.equals(StartPosition.FAR) ? (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (270.0) : (90.0)) : (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (90.0) : (270.0))));
 //                            .rotated(Math.toRadians(AutoOpmode.robotColor.equals(AllianceColor.RED) ? 90.0 : 270.0));
                     driveDirection = new Pose2d(
                             robotFrameInput.getX(), robotFrameInput.getY(),
@@ -185,7 +185,7 @@ public class Manual extends RobotHardware {
             }
             telemetry.addData("Tracking:", CombinedTracker.trackType.name());
 
-            if(secondary.left_trigger > deadzone && !secondary.leftTriggerOnce()) {
+            if(secondary.left_trigger > deadzone) {
                 if(visionDetection == null)
                     return;
                 CombinedTracker l = visionDetection.getLeftPipeline(), r = visionDetection.getRightPipeline();
@@ -216,15 +216,16 @@ public class Manual extends RobotHardware {
                 armPosition = Configuration.ServoPosition.NONE;
 
                 stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(prevArmPos, prevArmPos));
+            } else if(secondary.leftStickButtonOnce()) {
+                armPosition = Configuration.ServoPosition.NONE;
+                stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(Configuration.ServoPosition.OTHER));
             } else {
-                if(secondary.leftTriggerOnce()) {
-                    stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(Configuration.ServoPosition.HOLD));
-                } else if (secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
+                if (secondary.rightBumperOnce() && !armPosition.equals(Configuration.ServoPosition.INTAKE)) {
                     switch (armPosition) {
                         case START:
-                            armPosition = Configuration.ServoPosition.HOLD;
+                            armPosition = Configuration.ServoPosition.TELEOP_HOLD;
                             break;
-                        case HOLD:
+                        case TELEOP_HOLD:
                             armPosition = Configuration.ServoPosition.INTERMEDIARY;
                             break;
                         case NONE:
@@ -232,11 +233,11 @@ public class Manual extends RobotHardware {
                             armPosition = Configuration.ServoPosition.INTAKE;
                     }
                     stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
-                } else if (secondary.leftBumperOnce() && !armPosition.equals(Configuration.ServoPosition.HOLD)) {
+                } else if (secondary.leftBumperOnce() && !armPosition.equals(Configuration.ServoPosition.TELEOP_HOLD)) {
                     switch (armPosition) {
                         case NONE:
                         case INTERMEDIARY:
-                            armPosition = Configuration.ServoPosition.HOLD;
+                            armPosition = Configuration.ServoPosition.TELEOP_HOLD;
                             break;
                         case INTAKE:
                             armPosition = Configuration.ServoPosition.INTERMEDIARY;

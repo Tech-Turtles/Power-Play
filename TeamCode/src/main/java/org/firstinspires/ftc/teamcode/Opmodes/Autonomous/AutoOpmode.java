@@ -21,7 +21,7 @@ import java.util.ArrayList;
 public class AutoOpmode extends RobotHardware {
 
     public static AllianceColor robotColor = AllianceColor.RED;
-    StartPosition robotStartPos;
+    public static StartPosition robotStartPos;
     private Executive.RobotStateMachineContextInterface robotStateContext;
     int LEFT = 1;
     int MIDDLE = 2;
@@ -34,7 +34,6 @@ public class AutoOpmode extends RobotHardware {
         @Override public void init() {
             robotColor = AllianceColor.RED;
             robotStartPos = StartPosition.AUDIENCE;
-            RobotStateContext.far = false;
             super.init();
         }
     }
@@ -43,8 +42,7 @@ public class AutoOpmode extends RobotHardware {
     public static class AutoRedBuild extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
-            RobotStateContext.far = true;
-            robotStartPos = StartPosition.AUDIENCE;
+            robotStartPos = StartPosition.FAR;
             super.init();
         }
     }
@@ -53,8 +51,7 @@ public class AutoOpmode extends RobotHardware {
     public static class AutoBluePickup extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
-            RobotStateContext.far = true;
-            robotStartPos = StartPosition.AUDIENCE;
+            robotStartPos = StartPosition.FAR;
             super.init();
         }
     }
@@ -64,7 +61,6 @@ public class AutoOpmode extends RobotHardware {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
             robotStartPos = StartPosition.AUDIENCE;
-            RobotStateContext.far = false;
             super.init();
         }
     }

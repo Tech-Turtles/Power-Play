@@ -55,9 +55,9 @@ public class DriveConstants {
      */
     // Calculate max velocity and reduce it to 80% in order to prevent errors from the motor being unable to reach its max.
     //ToDo Increase velocity and see if it negatively effects performance.
-    public static double MAX_VEL = ((MAX_RPM / 60) * GEAR_RATIO * WHEEL_RADIUS * (2 * Math.PI)) * 0.85;
+    public static double MAX_VEL = ((MAX_RPM / 60) * GEAR_RATIO * WHEEL_RADIUS * (2 * Math.PI)) * 0.87;
     //ToDo Increase Acceleration until it causes issues.
-    public static double MAX_ACCEL = 50;
+    public static double MAX_ACCEL = 55;
     //ToDo Increase Angle Velocity.
     public static double MAX_ANG_VEL = Math.toRadians(180);
     //ToDo Increase Angle Acceleration.

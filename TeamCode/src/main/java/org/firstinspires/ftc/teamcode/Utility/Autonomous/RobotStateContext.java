@@ -36,7 +36,6 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     private TrajectoryRR trajectoryRR;
     private Signal signal = Signal.NONE;
     private final double visionTimeout = 2.0;
-    public static boolean far = false;
     private int lastTurretPos = 0;
     private double lastArmPos = 0.7;
     public static double armOffset = -0.053;
@@ -89,13 +88,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         @Override
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
-            if(far) {
-                if(allianceColor.equals(AllianceColor.BLUE))
-                    trajectoryRR.resetTrajectories(AllianceColor.RED);
-                else
-                    trajectoryRR.resetTrajectories(AllianceColor.BLUE);
-            } else if(allianceColor.equals(AllianceColor.BLUE))
-                trajectoryRR.resetTrajectories(AllianceColor.BLUE);
+            trajectoryRR.resetTrajectories(allianceColor);
 
             switch (startPosition) {
                 case AUDIENCE:
@@ -162,10 +155,10 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         @Override
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
-            opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryAudienceStartToHighPole());
+            opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceStartToHighPole() : trajectoryRR.getTrajectoryFarStartToHighPole());
             stateMachine.changeState(SLIDE, new SlidePosition(HIGH_POLE_POS));
             stateMachine.changeState(INTAKE, new ArmPosition(Configuration.ServoPosition.HOLD));
-            stateMachine.changeState(TURRET, new TurretAngle(far ? (allianceColor.equals(AllianceColor.RED) ? (35.0) : (50.0)) : (allianceColor.equals(AllianceColor.RED) ? (50.0) : (35.0))));
+            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (50.0) : (35.0)) : (allianceColor.equals(AllianceColor.RED) ? 130.0 : (-45.0))));
             CombinedTracker.trackType = TrackType.POLE;
         }
 
@@ -200,10 +193,10 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         @Override
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
-            opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryAudienceHighPoleToStack());
+            opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceHighPoleToStack() : trajectoryRR.getTrajectoryFarHighPoleToStack());
             stateMachine.changeState(SLIDE, new SlidePosition(INTAKE_LOW_POS - (iteration * CONE_STACK_TICKS)));
             stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.32, Configuration.CLAW_OPEN));
-            stateMachine.changeState(TURRET, new TurretAngle(far ? (allianceColor.equals(AllianceColor.BLUE) ? (180.0) : (-90.0)) : (allianceColor.equals(AllianceColor.BLUE) ? (-90.0) : (180.0)), 0.3));
+            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (180.0) : (-90.0)) : (allianceColor.equals(AllianceColor.RED) ? 0.0 : (90.0)), 0.3));
             CombinedTracker.trackType = TrackType.CONE;
         }
 
@@ -213,7 +206,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             if(opMode.mecanumDrive.isBusy()) return;
 
             if(!hasArrived) {
-                opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryAudienceSlowStackGrab());
+                opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceSlowStackGrab() : trajectoryRR.getTrajectoryFarSlowStackGrab());
                 hasArrived = true;
                 return;
             }
@@ -240,7 +233,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         @Override
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
-            opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getTrajectoryAudienceStackToHighPole());
+            opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceStackToHighPole() : trajectoryRR.getTrajectoryFarStackToHighPole());
             stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.HOLD, 0, Configuration.CLAW_CLOSED));
             stateMachine.changeState(SLIDE, new SlidePosition(HIGH_POLE_POS));
             stateMachine.changeState(TURRET, new TurretAngle(lastTurretPos / Configuration.TURRET_TICKS_PER_DEGREE));
@@ -308,10 +301,10 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         @Override
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
-            opMode.mecanumDrive.followTrajectoryAsync(trajectoryRR.getHighPoleSleeveTrajectory(allianceColor, signal));
+            opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getAudienceHighPoleSleeveTrajectory(allianceColor, signal) : trajectoryRR.getFarHighPoleSleeveTrajectory(allianceColor, signal));
             stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.HOLD, 0, Configuration.CLAW_OPEN));
             stateMachine.changeState(SLIDE, new SlidePosition(Configuration.LOW_POS));
-            stateMachine.changeState(TURRET, new TurretAngle(far ? (allianceColor.equals(AllianceColor.RED) ? (0.0) : (90.0)) : (allianceColor.equals(AllianceColor.RED) ? (90.0) : (0.0))));
+            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (90.0) : (0.0)) : ((allianceColor.equals(AllianceColor.RED)) ? 90.0 : 0.0)));
         }
 
         @Override
