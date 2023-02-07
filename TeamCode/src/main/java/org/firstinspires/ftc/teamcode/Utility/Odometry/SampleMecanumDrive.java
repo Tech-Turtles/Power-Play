@@ -74,6 +74,8 @@ public class SampleMecanumDrive extends MecanumDrive {
     public static double VY_WEIGHT = 1;
     public static double OMEGA_WEIGHT = 1;
 
+    public static boolean useIMU = false;
+
     public static int POSE_HISTORY_LIMIT = 100;
 
     public enum Mode {
@@ -99,7 +101,7 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     private final DcMotorEx leftFront, leftRear, rightRear, rightFront;
     private final List<DcMotorEx> motors;
-    private final BNO055IMU imu;
+    private volatile BNO055IMU imu;
 
     private final VoltageSensor batteryVoltageSensor;
 
@@ -134,16 +136,17 @@ public class SampleMecanumDrive extends MecanumDrive {
         LynxModuleUtil.ensureMinimumFirmwareVersion(hardwareMap);
 
         batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
+        if(useIMU) {
+            imu = hardwareMap.get(BNO055IMU.class, IMU.IMU1.getName());
+            if (imu != null) {
+                BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+                parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+                imu.initialize(parameters);
 
-        imu = hardwareMap.get(BNO055IMU.class, IMU.IMU1.getName());
-        if(imu != null) {
-            BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-            parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
-            imu.initialize(parameters);
-
-            // If your hub is mounted vertically, remap the IMU axes so that the z-axis points
-            // upward (normal to the floor) using a command like the following:
-            BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
+                // If your hub is mounted vertically, remap the IMU axes so that the z-axis points
+                // upward (normal to the floor) using a command like the following:
+                BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
+            }
         }
 
         if(opmode != null) {
@@ -179,7 +182,10 @@ public class SampleMecanumDrive extends MecanumDrive {
         // If desired, use setLocalizer() to change the localization method
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
 //        setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap));
-        setLocalizer(new TwoWheelTrackingLocalizer(hardwareMap, this));
+        if(useIMU)
+            setLocalizer(new TwoWheelTrackingLocalizer(hardwareMap, this));
+        else
+            setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap));
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {
@@ -431,13 +437,16 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     @Override
     public double getRawExternalHeading() {
-        return imu.getAngularOrientation().firstAngle;
-//        return 0;
+        if(useIMU)
+            return imu.getAngularOrientation().firstAngle;
+        return 0;
     }
 
     @Nullable
     @Override
     public Double getExternalHeadingVelocity() {
+        if(!useIMU)
+            return null;
         return (double) imu.getAngularVelocity().xRotationRate;
     }
 

@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.HardwareTypes.MotorTypes;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
+import org.firstinspires.ftc.teamcode.HardwareTypes.RevDistanceSensor;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 
 /**
@@ -47,8 +48,11 @@ public class Diagnostic extends Manual {
             }
         }
 
+        telemetry.addData("Claw Distance: ", getDistance(RevDistanceSensor.CLAW_DISTANCE));
+
         telemetry.addData("Left Encoder" + ": ", motorUtility.getEncoderValue(Motors.FRONT_LEFT));
-        telemetry.addData("Middle Encoder" + ": ", motorUtility.getEncoderValue(Motors.FRONT_RIGHT));
+        telemetry.addData("Middle Encoder" + ": ", motorUtility.getEncoderValue(Motors.BACK_RIGHT));
+        telemetry.addData("Right Encoder" + ": ", motorUtility.getEncoderValue(Motors.FRONT_RIGHT));
 
         for (Servos servo : Servos.values()) {
             telemetry.addData(servo.name() + ": ", servoUtility.getAngle(servo));

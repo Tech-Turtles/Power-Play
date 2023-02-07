@@ -7,8 +7,10 @@ import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateM
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_CLOSED;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.CLAW_OPEN;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.deadzone;
+import static org.firstinspires.ftc.teamcode.Utility.Configuration.precisionPercentage;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.control.PIDCoefficients;
 import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
@@ -36,18 +38,16 @@ import org.opencv.core.Rect;
 @Config
 @TeleOp(name="Manual", group="A")
 public class Manual extends RobotHardware {
-    
-    public static double precisionMode = 1.0;
-    public static double precisionPercentage = 0.35;
-    public static double clawGrab = CLAW_OPEN;
-    public static double linearSpeed = 1.0;
-    public static double lateralSpeed = 1.0;
-    public static double rotationSpeed = 1.0;
+
+    public static double linearSpeed = 1.0, lateralSpeed = 1.0, rotationSpeed = 1.0;
+    private double precisionMode = 1.0;
+
     public static double turretSpeed = 0.8;
     public static double turretMultiplier = 1.0;
-
     public static double turretA = 1000;
     public static double turretV = 1500;
+
+    private double clawGrab = CLAW_OPEN;
 
     double theta = Math.toRadians(0.0);
 
@@ -63,6 +63,9 @@ public class Manual extends RobotHardware {
     private double prevArmPos = armPosition.getLeft();
     public static double armOffset = -0.12;
     public static double liftDownSpeed = 0.3;
+
+    public static double turretP = 0.002;
+    public static double turretEps = 8;
 
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,
@@ -80,6 +83,7 @@ public class Manual extends RobotHardware {
     @Override
     public void init() {
         super.init();
+        SampleMecanumDrive.useIMU = true;
         armPosition = Configuration.ServoPosition.TELEOP_HOLD;
 
         stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));
@@ -119,7 +123,7 @@ public class Manual extends RobotHardware {
             Pose2d driveDirection = new Pose2d();
 
             if(primary.AOnce())
-                precisionMode = precisionMode == 1 ? precisionPercentage : 1;
+                precisionMode = precisionMode == 1.0 ? precisionPercentage : 1.0;
 
             if(primary.YOnce())
                 mecanumDrive.setPoseEstimate(new Pose2d(mecanumDrive.getPoseEstimate().vec(), 0.0));
@@ -152,7 +156,6 @@ public class Manual extends RobotHardware {
                     Vector2d robotFrameInput = fieldFrameInput
                             .rotated(-poseEstimate.getHeading())
                             .rotated(Math.toRadians(AutoOpmode.robotStartPos.equals(StartPosition.FAR) ? (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (270.0) : (90.0)) : (AutoOpmode.robotColor.equals(AllianceColor.RED) ? (90.0) : (270.0))));
-//                            .rotated(Math.toRadians(AutoOpmode.robotColor.equals(AllianceColor.RED) ? 90.0 : 270.0));
                     driveDirection = new Pose2d(
                             robotFrameInput.getX(), robotFrameInput.getY(),
                             -primary.right_stick_x * rotationSpeed * precisionMode
@@ -261,12 +264,6 @@ public class Manual extends RobotHardware {
             } else if(secondary.dpadLeftOnce()) {
                 stateMachine.changeState(TURRET, new Turret_Angle(90.0));
             }
-
-            if(secondary.leftTriggerOnce()) {
-                contourIndex++;
-            } else if(secondary.rightStickButtonOnce()) {
-                contourIndex = 0;
-            }
         }
     }
 
@@ -359,7 +356,6 @@ public class Manual extends RobotHardware {
         }
     }
 
-    //ToDo Implement distance estimation + driving & grabbing cone autonomously
     class Turret_Cone_Align extends Executive.StateBase<Manual> {
 
         @Override
@@ -369,7 +365,6 @@ public class Manual extends RobotHardware {
             if(controller == null)
                 return;
 
-            //ToDo See if a motion profile is necessary
             double turn = calculateTurn() * turretMultiplier;
             
             controller.setTargetPosition(motorUtility.getEncoderValue(Motors.TURRET) + (turn * Configuration.TURRET_TICKS_PER_DEGREE));
@@ -408,11 +403,47 @@ public class Manual extends RobotHardware {
     }
 
     class Turret_Cone_Align_Bang extends Executive.StateBase<Manual> {
+        PIDFController controller;
+
+        @Override
+        public void init(Executive.StateMachine<Manual> stateMachine) {
+            super.init(stateMachine);
+            controller = new PIDFController(new PIDCoefficients(turretP, 0.0, 0.0));
+        }
 
         @Override
         public void update() {
             super.update();
-            motorUtility.setPower(Motors.TURRET, calculateTurn() * precisionMode);
+            motorUtility.setPower(Motors.TURRET, controller.update(getTurn()));
+        }
+
+        private double getTurn() {
+
+            if(visionDetection == null)
+                return 0.0;
+
+
+            Rect r = opMode.visionDetection.getRightPipeline().getBiggestCone();
+            Rect l = opMode.visionDetection.getLeftPipeline().getBiggestCone();
+
+            if(!(r.area() > 80))
+                return 0.0;
+
+            double coneCenterL = 320 - (l.x + (l.width/2.0)), coneCenterR = (r.x + (r.width/2.0));
+
+            if(almostEqual(coneCenterL, coneCenterR, turretEps))
+                return 0.0;
+
+            double direction = coneCenterL > coneCenterR ? 1.0 : -1.0;
+            double error = ((((coneCenterR + coneCenterL)/2.0) - coneCenterL) + (((coneCenterR + coneCenterL)/2.0) - (320 - coneCenterR)));
+
+            telemetry.addData("Error", error);
+
+            return error;
+        }
+
+        private boolean almostEqual(double a, double b, double eps){
+            return Math.abs(a-b) < eps;
         }
 
         private double calculateTurn() {

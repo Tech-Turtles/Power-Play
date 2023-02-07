@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.Utility.Autonomous;
 
+import static org.firstinspires.ftc.teamcode.Opmodes.Driving.Manual.turretEps;
+import static org.firstinspires.ftc.teamcode.Opmodes.Driving.Manual.turretP;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.DRIVE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
 import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.SLIDE;
@@ -7,6 +9,7 @@ import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateM
 import static org.firstinspires.ftc.teamcode.Utility.RobotHardware.df;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.control.PIDCoefficients;
 import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.profile.MotionProfile;
@@ -35,13 +38,13 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     private final StartPosition startPosition;
     private TrajectoryRR trajectoryRR;
     private Signal signal = Signal.NONE;
-    private final double visionTimeout = 2.0;
-    private int lastTurretPos = 0;
-    private double lastArmPos = 0.7;
+    private final double visionTimeout = 1.0;
+    private int lastTurretScorePos = 0, lastTurretStackPos = 0;
     public static double armOffset = -0.053;
-    public static int maxIterations = 5;
+    private final int visionSwitchIterations = 4;
+    public static int maxIterations = 6;
 
-    private final double HIGH_POLE_POS = 780.0, INTAKE_LOW_POS = Configuration.MEDIUM_POS - 60.0, CONE_STACK_TICKS = 45.0;
+    private final double HIGH_POLE_POS = 850.0, INTAKE_LOW_POS = Configuration.MEDIUM_POS - 30.0, CONE_STACK_TICKS = 45.0;
 
     public RobotStateContext(AutoOpmode autoOpmode, AllianceColor allianceColor, StartPosition startPosition) {
         this.autoOpmode = autoOpmode;
@@ -158,7 +161,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceStartToHighPole() : trajectoryRR.getTrajectoryFarStartToHighPole());
             stateMachine.changeState(SLIDE, new SlidePosition(HIGH_POLE_POS));
             stateMachine.changeState(INTAKE, new ArmPosition(Configuration.ServoPosition.HOLD));
-            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (50.0) : (35.0)) : (allianceColor.equals(AllianceColor.RED) ? 130.0 : (-45.0))));
+            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (50.0) : (35.0)) : (allianceColor.equals(AllianceColor.RED) ? 130.0 : (-45.0)), 1));
             CombinedTracker.trackType = TrackType.POLE;
         }
 
@@ -168,7 +171,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             if(opMode.mecanumDrive.isBusy()) return;
 
             if(stateMachine.getStateReferenceByType(TURRET).isDone && opMode.visionDetection != null && !stateMachine.getCurrentStateByType(TURRET).equals(TurretVisionTrack.class))
-                stateMachine.changeState(TURRET, new TurretVisionTrack());
+                stateMachine.changeState(TURRET, new TurretVisionTrack(1));
 
             if(!isDone && (stateMachine.getStateReferenceByType(SLIDE).isDone || timer.seconds() > 2.0)) {
                 isDone = true;
@@ -176,7 +179,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                 stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 0.5, Configuration.CLAW_OPEN));
             }
 
-            if(timer.seconds() > 0.75 && isDone) {
+            if(timer.seconds() > 0.55 && isDone) {
                 stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.HOLD, 0.0, Configuration.CLAW_OPEN));
                 stateMachine.changeState(DRIVE, new HighPoleToStack(1));
             }
@@ -195,8 +198,11 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             super.init(stateMachine);
             opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceHighPoleToStack() : trajectoryRR.getTrajectoryFarHighPoleToStack());
             stateMachine.changeState(SLIDE, new SlidePosition(INTAKE_LOW_POS - (iteration * CONE_STACK_TICKS)));
-            stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.32, Configuration.CLAW_OPEN));
-            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (180.0) : (-90.0)) : (allianceColor.equals(AllianceColor.RED) ? 0.0 : (90.0)), 0.3));
+            stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.23, Configuration.CLAW_OPEN));
+            if(iteration > 1)
+                stateMachine.changeState(TURRET, new TurretAngle(lastTurretStackPos / Configuration.TURRET_TICKS_PER_DEGREE, iteration));
+            else
+                stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (180.0) : (-90.0)) : (allianceColor.equals(AllianceColor.RED) ? 0.0 : (90.0)), 0.3, iteration));
             CombinedTracker.trackType = TrackType.CONE;
         }
 
@@ -211,7 +217,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                 return;
             }
 
-            if(!isDone && (timer.seconds() > 0.45 || (opMode.getDistance(RevDistanceSensor.CLAW_DISTANCE) < 0.35 && opMode.getDistance(RevDistanceSensor.CLAW_DISTANCE) > 0.0))) {
+            if(!isDone && (timer.seconds() > 0.01 || (opMode.getDistance(RevDistanceSensor.CLAW_DISTANCE) < 3.0 && opMode.getDistance(RevDistanceSensor.CLAW_DISTANCE) > 0.0))) {
                 isDone = true;
                 stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.0, Configuration.CLAW_CLOSED));
                 stateMachine.changeState(SLIDE, new SlidePosition(HIGH_POLE_POS));
@@ -219,7 +225,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                 return;
             }
 
-            if(isDone && timer.seconds() > 0.75) {
+            if(isDone && timer.seconds() > 0.45) {
                 stateMachine.changeState(DRIVE, new StackToHighPole(iteration + 1));
             }
         }
@@ -236,8 +242,8 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceStackToHighPole() : trajectoryRR.getTrajectoryFarStackToHighPole());
             stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.HOLD, 0, Configuration.CLAW_CLOSED));
             stateMachine.changeState(SLIDE, new SlidePosition(HIGH_POLE_POS));
-            stateMachine.changeState(TURRET, new TurretAngle(lastTurretPos / Configuration.TURRET_TICKS_PER_DEGREE));
-            if(iteration >= 4)
+            stateMachine.changeState(TURRET, new TurretAngle(lastTurretScorePos / Configuration.TURRET_TICKS_PER_DEGREE, iteration));
+            if(iteration >= visionSwitchIterations)
                 CombinedTracker.trackType = TrackType.CONE;
             else
                 CombinedTracker.trackType = TrackType.POLE;
@@ -249,49 +255,18 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             if(opMode.mecanumDrive.isBusy()) return;
 
             if(stateMachine.getStateReferenceByType(TURRET).isDone && opMode.visionDetection != null && !stateMachine.getCurrentStateByType(TURRET).equals(TurretVisionTrack.class))
-//                if(iteration >= 4)
-//                    stateMachine.changeState(TURRET, new Executive.StateBase<AutoOpmode>() {
-//                        @Override
-//                        public void update() {
-//                            super.update();
-//                            isDone = opMode.motorUtility.goToPosition(Motors.TURRET, lastTurretPos, 1.0);
-//                        }
-//                    });
-//                else
-                    stateMachine.changeState(TURRET, new TurretVisionTrack());
+                    stateMachine.changeState(TURRET, new TurretVisionTrack(iteration));
 
             if(!isDone && (stateMachine.getStateReferenceByType(SLIDE).isDone || timer.seconds() > 2.0)) {
                 isDone = true;
                 timer.reset();
-//                if(iteration >= 4)
-//                    stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(lastArmPos, lastArmPos, 0.5, Configuration.CLAW_OPEN));
-//                else
-                    stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 0.5, Configuration.CLAW_OPEN));
+                stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 0.4, Configuration.CLAW_OPEN));
             }
 
-//            if(!isDone && (stateMachine.getStateReferenceByType(SLIDE).isDone || timer.seconds() > 2.0) && (stateMachine.getStateReferenceByType(TURRET).isDone || timer.seconds() > 2.0)) {
-//                isDone = true;
-//                timer.reset();
-//                stateMachine.changeState(SLIDE, new SlidePosition(675));
-//                if(iteration == 4) {
-//                    stateMachine.changeState(TURRET, new Executive.StateBase<AutoOpmode>() {
-//                        @Override
-//                        public void update() {
-//                            super.update();
-//                            isDone = opMode.motorUtility.goToPosition(Motors.TURRET, lastTurretPos, 1.0);
-//                        }
-//                    });
-//                    stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(lastArmPos, lastArmPos, 1.0, Configuration.CLAW_OPEN));
-//                } else if (opMode.visionDetection != null) {
-//                    stateMachine.changeState(TURRET, new TurretVisionTrack());
-//                    stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 1.0, Configuration.CLAW_OPEN));
-//                }
-//            }
-
-            if(timer.seconds() > 0.75 && isDone) {
-                if(iteration >= maxIterations)
+            if(timer.seconds() > 0.5 && isDone) {
+                if(iteration >= maxIterations) {
                     stateMachine.changeState(DRIVE, new HighPoleToPark());
-                else
+                } else
                     stateMachine.changeState(DRIVE, new HighPoleToStack(iteration));
             }
         }
@@ -302,9 +277,9 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
             opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getAudienceHighPoleSleeveTrajectory(allianceColor, signal) : trajectoryRR.getFarHighPoleSleeveTrajectory(allianceColor, signal));
-            stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.HOLD, 0, Configuration.CLAW_OPEN));
+            stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.TELEOP_HOLD, 0, Configuration.CLAW_OPEN));
             stateMachine.changeState(SLIDE, new SlidePosition(Configuration.LOW_POS));
-            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (90.0) : (0.0)) : ((allianceColor.equals(AllianceColor.RED)) ? 90.0 : 0.0)));
+            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (90.0) : (0.0)) : ((allianceColor.equals(AllianceColor.RED)) ? 90.0 : 0.0), maxIterations));
         }
 
         @Override
@@ -355,68 +330,54 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
 
     class TurretVisionTrack extends Executive.StateBase<AutoOpmode> {
         PIDFController controller;
-        private MotionProfile activeProfile;
-        private double profileStart;
+        int iterations;
+
+        TurretVisionTrack(int iterations) {
+            this.iterations = iterations;
+        }
 
         @Override
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
-//            controller = opMode.motorUtility.getController(Motors.TURRET);
-//            profileStart = timer.seconds();
-//            MotionState start = new MotionState(opMode.motorUtility.getEncoderValue(Motors.TURRET), 0, 0, 0);
-//            MotionState goal = new MotionState(opMode.motorUtility.getEncoderValue(Motors.TURRET) + calculateTurn() * Configuration.TURRET_TICKS_PER_DEGREE, 0, 0, 0);
-//            activeProfile = MotionProfileGenerator.generateSimpleMotionProfile(start, goal, 1500, 1000);
+            controller = new PIDFController(new PIDCoefficients(turretP, 0.0, 0.0));
         }
 
         @Override
         public void update() {
             super.update();
-
-
-//            double profileTime = timer.seconds() - profileStart;
-//
-//            if (profileTime > activeProfile.duration()) {
-//                MotionState start = new MotionState(opMode.motorUtility.getEncoderValue(Motors.TURRET), 0, 0, 0);
-//                MotionState goal = new MotionState(opMode.motorUtility.getEncoderValue(Motors.TURRET) + calculateTurn() * Configuration.TURRET_TICKS_PER_DEGREE, 0, 0, 0);
-//                activeProfile = MotionProfileGenerator.generateSimpleMotionProfile(start, goal, 1500, 1000);
-//                profileStart = timer.seconds();
-//            }
-//
-//            MotionState motionState = activeProfile.get(profileTime);
-//
-//            controller.setTargetPosition(motionState.getX());
-//            controller.setTargetVelocity(motionState.getV());
-//            controller.setTargetAcceleration(motionState.getA());
-
-//            opMode.motorUtility.setPower(Motors.TURRET, controller.update(opMode.motorUtility.getEncoderValue(Motors.TURRET), opMode.motorUtility.getVelocity(Motors.TURRET)));
-
-            opMode.motorUtility.setPower(Motors.TURRET, calculateTurn());
-
+            opMode.motorUtility.setPower(Motors.TURRET, controller.update(getTurn()));
             if(CombinedTracker.trackType.equals(TrackType.POLE))
-                lastTurretPos = opMode.motorUtility.getEncoderValue(Motors.TURRET);
-
-            if(stateTimer.seconds() > 1.0)
-                isDone = true;
+                lastTurretScorePos = opMode.motorUtility.getEncoderValue(Motors.TURRET);
+            else if(CombinedTracker.trackType.equals(TrackType.CONE)) {
+                if(iterations < visionSwitchIterations)
+                    lastTurretStackPos = opMode.motorUtility.getEncoderValue(Motors.TURRET);
+            }
         }
 
-        private double calculateTurn() {
+        private double getTurn() {
+
             if(opMode.visionDetection == null)
                 return 0.0;
+
 
             Rect r = opMode.visionDetection.getRightPipeline().getBiggestCone();
             Rect l = opMode.visionDetection.getLeftPipeline().getBiggestCone();
 
-            if(!(r.area() > 30))
+            if(!(r.area() > 80))
                 return 0.0;
 
-            double coneCenterL = l.x + (l.width/2.0), coneCenterR = r.x + (r.width/2.0);
-            double direction = coneCenterL < 320 - coneCenterR ? 1.0 : -1.0;
-            double turn = Math.abs(coneCenterL - (320 - coneCenterR)) / 200.0;
+            double coneCenterL = 320 - (l.x + (l.width/2.0)), coneCenterR = (r.x + (r.width/2.0));
 
-            if(Math.abs(coneCenterL - (320 - coneCenterR)) < 3)
+            if(almostEqual(coneCenterL, coneCenterR, turretEps)) {
+                isDone = true;
                 return 0.0;
+            }
 
-            return Range.clip(turn * 0.5, 0.0, 1.0) * direction;
+            return ((((coneCenterR + coneCenterL)/2.0) - coneCenterL) + (((coneCenterR + coneCenterL)/2.0) - (320 - coneCenterR)));
+        }
+
+        private boolean almostEqual(double a, double b, double eps){
+            return Math.abs(a-b) < eps;
         }
 
 //        private double calculateTurn() {
@@ -472,7 +433,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                     leftCameraDist = Math.sin(Math.toRadians(triangleRightAngle)) *
                             ((Configuration.CAMERA_DISTANCE_IN)/Math.sin(Math.toRadians(gamma))),
                     frontDist = Math.abs(leftCameraDist * Math.sin(Math.toRadians(triangleLeftAngle)));
-            frontDist = CombinedTracker.trackType.equals(TrackType.CONE) ? frontDist + Configuration.ARM_CONE_OFFSET_IN : frontDist;
+            frontDist = CombinedTracker.trackType.equals(TrackType.CONE) ? frontDist + Configuration.ARM_CONE_OFFSET_IN : frontDist + 0.1;
             double pos = Double.parseDouble(RobotHardware.df.format((Math.toDegrees(Math.acos((frontDist - 3.0)/14.0)) + 90.0) / 180.0));
 
             try {
@@ -483,7 +444,6 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                 opMode.servoUtility.setAngle(Servos.LEFT_ARM, prevArmPos);
                 opMode.servoUtility.setAngle(Servos.RIGHT_ARM, prevArmPos);
             }
-            lastArmPos = prevArmPos;
         }
     }
 
@@ -537,14 +497,17 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     class TurretAngle extends Executive.StateBase<AutoOpmode> {
         private double angle;
         private double delay = 0;
+        private int iterations;
 
-        TurretAngle(double angle) {
+        TurretAngle(double angle, int iterations) {
             this.angle = angle;
+            this.iterations = iterations;
         }
 
-        TurretAngle(double angle, double delay) {
+        TurretAngle(double angle, double delay, int iterations) {
             this.angle = angle;
             this.delay = delay;
+            this.iterations = iterations;
         }
 
         @Override
@@ -558,7 +521,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             super.update();
             isDone = opMode.motorUtility.goToPosition(Motors.TURRET, (int) angle, 1.0);
             if(isDone && delay > 0 && timer.seconds() > delay)
-                nextState(TURRET, new TurretVisionTrack());
+                nextState(TURRET, new TurretVisionTrack(iterations));
 //            isDone = true;
         }
     }
@@ -581,7 +544,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             profileStart = timer.seconds();
             MotionState start = new MotionState(opMode.motorUtility.getEncoderValue(Motors.SLIDE_LEFT), 0, 0, 0);
             MotionState goal = new MotionState(setpoint, 0, 0, 0);
-            activeProfile = MotionProfileGenerator.generateSimpleMotionProfile(start, goal, 1800, 1200);
+            activeProfile = MotionProfileGenerator.generateSimpleMotionProfile(start, goal, 2000, 1300);
         }
 
         @Override

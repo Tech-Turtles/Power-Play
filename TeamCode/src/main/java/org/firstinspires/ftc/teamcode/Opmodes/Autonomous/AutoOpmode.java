@@ -21,7 +21,7 @@ import java.util.ArrayList;
 public class AutoOpmode extends RobotHardware {
 
     public static AllianceColor robotColor = AllianceColor.RED;
-    public static StartPosition robotStartPos;
+    public static StartPosition robotStartPos = StartPosition.AUDIENCE;
     private Executive.RobotStateMachineContextInterface robotStateContext;
     int LEFT = 1;
     int MIDDLE = 2;
@@ -30,7 +30,7 @@ public class AutoOpmode extends RobotHardware {
     public AprilTagDetection tagOfInterest = null;
 
     @Autonomous(name="Red Left", group="A")
-    public static class AutoRedPickup extends AutoOpmode {
+    public static class AutoRedAudience extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
             robotStartPos = StartPosition.AUDIENCE;
@@ -39,7 +39,7 @@ public class AutoOpmode extends RobotHardware {
     }
 
     @Autonomous(name="Red Right", group="A")
-    public static class AutoRedBuild extends AutoOpmode {
+    public static class AutoRedFar extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.RED;
             robotStartPos = StartPosition.FAR;
@@ -48,7 +48,7 @@ public class AutoOpmode extends RobotHardware {
     }
 
     @Autonomous(name="Blue Left", group="B")
-    public static class AutoBluePickup extends AutoOpmode {
+    public static class AutoBlueFar extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
             robotStartPos = StartPosition.FAR;
@@ -57,7 +57,7 @@ public class AutoOpmode extends RobotHardware {
     }
 
     @Autonomous(name="Blue Right", group="B")
-    public static class AutoBlueBuild extends AutoOpmode {
+    public static class AutoBlueAudience extends AutoOpmode {
         @Override public void init() {
             robotColor = AllianceColor.BLUE;
             robotStartPos = StartPosition.AUDIENCE;
@@ -68,6 +68,7 @@ public class AutoOpmode extends RobotHardware {
     @Override
     public void init() {
         super.init();
+        SampleMecanumDrive.useIMU = false;
         CombinedTracker.trackType = TrackType.SLEEVE;
         robotStateContext = new RobotStateContext(this, robotColor, robotStartPos);
         loadVision();
@@ -89,23 +90,17 @@ public class AutoOpmode extends RobotHardware {
         if(visionDetection.getRightPipeline() != null)
             currentDetections.addAll(visionDetection.getRightPipeline().getLatestDetections());
 
-        if(currentDetections.size() != 0)
-        {
+        if(currentDetections.size() != 0) {
             boolean tagFound = false;
-
-            for(AprilTagDetection tag : currentDetections)
-            {
-                if(tag.id == LEFT || tag.id == MIDDLE || tag.id == RIGHT)
-                {
+            for(AprilTagDetection tag : currentDetections) {
+                if(tag.id == LEFT || tag.id == MIDDLE || tag.id == RIGHT) {
                     tagOfInterest = tag;
                     tagFound = true;
                     break;
                 }
             }
-
             if(!tagFound)
                 telemetry.addLine("Cannot see April Tag");
-
         } else
             telemetry.addLine("Cannot see April Tag");
 
@@ -113,7 +108,6 @@ public class AutoOpmode extends RobotHardware {
 
         servoUtility.setAngle(Servos.LEFT_ARM, Configuration.ServoPosition.START.getLeft());
         servoUtility.setAngle(Servos.RIGHT_ARM, Configuration.ServoPosition.START.getRight());
-
         servoUtility.setAngle(Servos.CLAW, Configuration.CLAW_CLOSED);
 
         telemetry.update();

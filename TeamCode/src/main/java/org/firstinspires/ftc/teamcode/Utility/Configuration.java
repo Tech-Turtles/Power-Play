@@ -6,6 +6,8 @@ import com.acmerobotics.dashboard.config.Config;
 @Config
 public class Configuration {
 
+    public static final double precisionPercentage = 0.35;
+
     public static final double deadzone = 0.49;
 
     public static final double TURRET_TICKS_PER_DEGREE = 7.155;
@@ -13,7 +15,7 @@ public class Configuration {
     public static double INTAKE_POS = 280;
     public static double LOW_POS = 200;
     public static double MEDIUM_POS = 525;
-    public static double HIGH_POS = 800;
+    public static double HIGH_POS = 830;
 
     public static double CLAW_OPEN = 1.0;
     public static double CLAW_ALIGN = 0.5;
@@ -35,8 +37,8 @@ public class Configuration {
         TELEOP_HOLD(0.95, 0.95),
         OTHER(0.83, 0.83),
         PLACE(0.6, 0.6),
-        INTERMEDIARY(0.3, 0.3),
         INTAKE(0.35, 0.35),
+        INTERMEDIARY(0.3, 0.3),
         LOW_INTAKE(0.25, 0.25),
         NONE(0.8, 0.8);
         private final double left;
