@@ -61,11 +61,11 @@ public class Manual extends RobotHardware {
     public static double liftSpeed = 0.85;
 
     private double prevArmPos = armPosition.getLeft();
-    public static double armOffset = -0.12;
+    public static double armOffset = -0.04;
     public static double liftDownSpeed = 0.3;
 
     public static double turretP = 0.002;
-    public static double turretEps = 8;
+    public static double turretEps = 1;
 
     enum DriveMode {
         NORMAL_ROBOT_CENTRIC,
@@ -84,6 +84,7 @@ public class Manual extends RobotHardware {
     public void init() {
         super.init();
         SampleMecanumDrive.useIMU = true;
+        CombinedTracker.coneColor = CombinedTracker.DETECT_COLOR.BOTH;
         armPosition = Configuration.ServoPosition.TELEOP_HOLD;
 
         stateMachine.changeState(INTAKE, new Horizontal_Arm_Position(armPosition));

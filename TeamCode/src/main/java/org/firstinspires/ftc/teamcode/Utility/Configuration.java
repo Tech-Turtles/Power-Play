@@ -15,7 +15,7 @@ public class Configuration {
     public static double INTAKE_POS = 280;
     public static double LOW_POS = 200;
     public static double MEDIUM_POS = 525;
-    public static double HIGH_POS = 830;
+    public static double HIGH_POS = 890;
 
     public static double CLAW_OPEN = 1.0;
     public static double CLAW_ALIGN = 0.5;

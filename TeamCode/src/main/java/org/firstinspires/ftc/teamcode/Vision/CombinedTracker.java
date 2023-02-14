@@ -4,6 +4,8 @@ import static org.opencv.core.Core.inRange;
 
 import com.acmerobotics.dashboard.config.Config;
 
+import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
+import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Signal;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
@@ -239,6 +241,9 @@ public class CombinedTracker extends OpenCvPipeline {
             maskBlue.release();
         }
 
+//        if(coneColor.equals(DETECT_COLOR.BOTH))
+//            Imgproc.rectangle(input, new Rect(new Point(Math.min(redRect.x, blueRect.x), Math.min(redRect.y, blueRect.y)), new Point(Math.max(redRect.x + redRect.width, blueRect.x + blueRect.width), Math.max(redRect.y + redRect.height, blueRect.y + blueRect.height))), CONTOUR_COLOR);
+
         Imgproc.line(input, new Point(0,horizon), new Point(640, horizon), HORIZON_COLOR);
 
         yCrCb.release();
@@ -356,10 +361,20 @@ public class CombinedTracker extends OpenCvPipeline {
     }
 
     public Rect getBiggestCone() {
-        if(trackType.equals(TrackType.POLE)) {
+        if(trackType.equals(TrackType.POLE))
             return poleRect;
+        if(coneColor.equals(DETECT_COLOR.BOTH)) {
+            if(almostEqual(redRect.x + (redRect.width/2.0), blueRect.x + (blueRect.width/2.0), 10.0))
+                return new Rect(new Point(Math.min(redRect.x, blueRect.x), Math.min(redRect.y, blueRect.y)), new Point(Math.max(redRect.x + redRect.width, blueRect.x + blueRect.width), Math.max(redRect.y + redRect.height, blueRect.y + blueRect.height)));
+            else {
+                return AutoOpmode.robotColor.equals(AllianceColor.RED) ? redRect : blueRect;
+            }
         }
         return coneColor.equals(DETECT_COLOR.RED) ? redRect : blueRect;
+    }
+
+    private boolean almostEqual(double a, double b, double eps){
+        return Math.abs(a-b) < eps;
     }
 
     public double getPoleAngle() {

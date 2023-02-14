@@ -66,30 +66,31 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
         when(color) {
             AllianceColor.BLUE -> {
 
-                startAudience = Pose2d(-35.0,61.75, 0.0.toRadians)
-                startFar = Pose2d(35.25,61.75, 0.0.toRadians)
+                startAudience = Pose2d(-35.0,61.75, 270.0.toRadians)
+                startFar = Pose2d(35.0,61.75, 270.0.toRadians)
 
                 val audienceStartToHighPole = trajectoryBuilder(startAudience, 270.0.toRadians)
-                    .splineToConstantHeading(Vector2d(-35.0, 12.25), 270.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-35.0, 17.0), 270.0.toRadians)
+                    .splineToSplineHeading(Pose2d(-35.0, 13.0, 0.0.toRadians), 270.0.toRadians)
                     .build()
                 this.trajectoryAudienceStartToHighPole = audienceStartToHighPole
 
                 val audienceHighPoleToStack = trajectoryBuilder(audienceStartToHighPole.end(), 180.0.toRadians)
-                    .splineToConstantHeading(Vector2d(-46.0, 13.0), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-45.0, 13.0), 180.0.toRadians)
                     .build()
                 this.trajectoryAudienceHighPoleToStack = audienceHighPoleToStack
 
                 val audienceSlowStackGrab = trajectoryBuilder(audienceHighPoleToStack.end(), 180.0.toRadians)
-                    .splineToConstantHeading(Vector2d(-52.25, 13.0), 180.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-53.25, 13.0), 180.0.toRadians)
                     .build()
                 this.trajectoryAudienceSlowStackGrab = audienceSlowStackGrab
 
                 val audienceStackToHighPole = trajectoryBuilder(audienceSlowStackGrab.end(),0.0.toRadians)
-                    .splineToConstantHeading(Vector2d(-35.0, 12.25), 0.0.toRadians)
+                    .splineToConstantHeading(Vector2d(-38.0, 13.0), 0.0.toRadians)
                     .build()
                 this.trajectoryAudienceStackToHighPole = audienceStackToHighPole
 
-                this.trajectoryAudienceHighPoleToSignalParkAudience =
+                this.trajectoryAudienceHighPoleToSignalParkFar =
                     trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
                         .lineToConstantHeading(Vector2d(-59.0,13.0))
                         .build()
@@ -99,7 +100,7 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                         .splineToConstantHeading(Vector2d(-35.0,20.0), (90.0).toRadians)
                         .build()
 
-                this.trajectoryAudienceHighPoleToSignalParkFar =
+                this.trajectoryAudienceHighPoleToSignalParkAudience =
                     trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
                         .lineToConstantHeading(Vector2d(-11.5,13.0))
                         .build()
@@ -139,7 +140,8 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                         .build()
 
                 val farStartToHighPole = trajectoryBuilder(startFar, 270.0.toRadians)
-                    .splineToConstantHeading(Vector2d(35.0, 13.0), 270.0.toRadians)
+                    .splineToConstantHeading(Vector2d(35.0, 17.0), 270.0.toRadians)
+                    .splineToSplineHeading(Pose2d(35.0, 13.0, 180.0.toRadians), 270.0.toRadians)
                     .build()
                 this.trajectoryFarStartToHighPole = farStartToHighPole
 
@@ -158,21 +160,19 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                     .build()
                 this.trajectoryFarStackToHighPole = farStackToHighPole
 
-                this.trajectoryFarHighPoleToSignalParkAudience =
+                this.trajectoryFarHighPoleToSignalParkFar =
                     trajectoryBuilder(farStackToHighPole.end(), 90.0.toRadians)
-                        .splineToConstantHeading(Vector2d(35.0,30.0), 90.0.toRadians)
-                        .splineToConstantHeading(Vector2d(11.5,34.5), 180.0.toRadians)
+                        .lineToConstantHeading(Vector2d(59.0,13.0))
                         .build()
 
                 this.trajectoryFarHighPoleToSignalParkMiddle =
-                    trajectoryBuilder(farStackToHighPole.end(), 90.0.toRadians)
-                        .splineToConstantHeading(Vector2d(35.0,30.0), (90.0).toRadians)
+                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(35.0,20.0), (90.0).toRadians)
                         .build()
 
-                this.trajectoryFarHighPoleToSignalParkFar =
+                this.trajectoryFarHighPoleToSignalParkAudience =
                     trajectoryBuilder(farStackToHighPole.end(), 90.0.toRadians)
-                        .splineToConstantHeading(Vector2d(35.0,30.0), 90.0.toRadians)
-                        .splineToConstantHeading(Vector2d(59.5,34.5), 0.0.toRadians)
+                        .lineToConstantHeading(Vector2d(11.5,13.0))
                         .build()
 
                 this.trajectoryFarStartToSignalParkAudience =
@@ -193,7 +193,7 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
                         .build()
             } else -> {
                 startAudience = Pose2d(-35.0,-61.75,90.0.toRadians)
-                startFar = Pose2d(35.25,-61.75,90.0.toRadians)
+                startFar = Pose2d(35.0,-61.75,90.0.toRadians)
 
                 this.trajectoryAudienceStartToSignalParkAudience =
                     trajectoryBuilder(startAudience, 180.0.toRadians)
@@ -252,57 +252,55 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
             
                 // Far trajectories
 
-                val farStartToHighPole = trajectoryBuilder(startFar, 90.0.toRadians, )
+                val farStartToHighPole = trajectoryBuilder(startFar, 90.0.toRadians)
                     .splineToConstantHeading(Vector2d(35.0, -17.0), 90.0.toRadians)
-                    .splineToSplineHeading(Pose2d(35.0, -13.0, 0.0.toRadians), 90.0.toRadians)
+                    .splineToSplineHeading(Pose2d(35.0, -13.0, 180.0.toRadians), 90.0.toRadians)
                     .build()
                 this.trajectoryFarStartToHighPole = farStartToHighPole
         
-                val farHighPoleToStack = trajectoryBuilder(farStartToHighPole.end(), 0.0.toRadians, )
+                val farHighPoleToStack = trajectoryBuilder(farStartToHighPole.end(), 0.0.toRadians)
                     .splineToConstantHeading(Vector2d(45.0, -13.0), 0.0.toRadians)
                     .build()
                 this.trajectoryFarHighPoleToStack = farHighPoleToStack
         
-                val farSlowStackGrab = trajectoryBuilder(farHighPoleToStack.end(), 0.0.toRadians, )
+                val farSlowStackGrab = trajectoryBuilder(farHighPoleToStack.end(), 0.0.toRadians)
                     .splineToConstantHeading(Vector2d(53.5, -13.0), 0.0.toRadians)
                     .build()
                 this.trajectoryFarSlowStackGrab = farSlowStackGrab
         
-                val farStackToHighPole = trajectoryBuilder(farSlowStackGrab.end(),180.0.toRadians, )
+                val farStackToHighPole = trajectoryBuilder(farSlowStackGrab.end(),180.0.toRadians)
                     .splineToConstantHeading(Vector2d(35.0, -13.0), 180.0.toRadians)
                     .build()
                 this.trajectoryFarStackToHighPole = farStackToHighPole
-        
-                this.trajectoryFarHighPoleToSignalParkAudience =
-                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians, )
-                        .splineToConstantHeading(Vector2d(35.0,-30.0), 270.0.toRadians)
-                        .splineToConstantHeading(Vector2d(11.5,-34.5), 180.0.toRadians)
-                        .build()
-        
-                this.trajectoryFarHighPoleToSignalParkMiddle =
-                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians, )
-                        .splineToConstantHeading(Vector2d(35.0,-30.0), (270.0).toRadians)
-                        .build()
-        
+
                 this.trajectoryFarHighPoleToSignalParkFar =
-                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians, )
-                        .splineToConstantHeading(Vector2d(35.0,-30.0), 270.0.toRadians)
-                        .splineToConstantHeading(Vector2d(59.5,-34.5), 0.0.toRadians)
+                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians)
+                        .lineToConstantHeading(Vector2d(59.0,-13.0))
+                        .build()
+
+                this.trajectoryFarHighPoleToSignalParkMiddle =
+                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians)
+                        .splineToConstantHeading(Vector2d(35.0,-20.0), (90.0).toRadians)
+                        .build()
+
+                this.trajectoryFarHighPoleToSignalParkAudience =
+                    trajectoryBuilder(farStackToHighPole.end(), 270.0.toRadians)
+                        .lineToConstantHeading(Vector2d(11.5,-13.0))
                         .build()
         
                 this.trajectoryFarStartToSignalParkAudience =
-                    trajectoryBuilder(startFar, 90.0.toRadians, )
+                    trajectoryBuilder(startFar, 90.0.toRadians)
                         .splineToConstantHeading(Vector2d(35.0,-40.0), 90.0.toRadians)
                         .splineToConstantHeading(Vector2d(59.5,-34.5), 0.0.toRadians)
                         .build()
         
                 this.trajectoryFarStartToSignalParkMiddle =
-                    trajectoryBuilder(startFar, 90.0.toRadians, )
+                    trajectoryBuilder(startFar, 90.0.toRadians)
                         .splineToConstantHeading(Vector2d(35.0,-30.0), (90.0).toRadians)
                         .build()
         
                 this.trajectoryFarStartToSignalParkFar =
-                    trajectoryBuilder(startFar, 90.0.toRadians, )
+                    trajectoryBuilder(startFar, 90.0.toRadians)
                         .splineToConstantHeading(Vector2d(35.0,-40.0), 90.0.toRadians)
                         .splineToConstantHeading(Vector2d(11.5,-34.5), 180.0.toRadians)
                         .build()

@@ -44,7 +44,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     private final int visionSwitchIterations = 4;
     public static int maxIterations = 6;
 
-    private final double HIGH_POLE_POS = 850.0, INTAKE_LOW_POS = Configuration.MEDIUM_POS - 30.0, CONE_STACK_TICKS = 45.0;
+    private final double HIGH_POLE_POS = 850.0, INTAKE_LOW_POS = Configuration.MEDIUM_POS - 70.0, CONE_STACK_TICKS = 45.0;
 
     public RobotStateContext(AutoOpmode autoOpmode, AllianceColor allianceColor, StartPosition startPosition) {
         this.autoOpmode = autoOpmode;
@@ -147,21 +147,19 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
         @Override
         public void update() {
             super.update();
-
             if(opMode.mecanumDrive.isIdle())
                 nextState(DRIVE, new Stop());
         }
     }
 
     class StartToHighPole extends Executive.StateBase<AutoOpmode> {
-
         @Override
         public void init(Executive.StateMachine<AutoOpmode> stateMachine) {
             super.init(stateMachine);
             opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceStartToHighPole() : trajectoryRR.getTrajectoryFarStartToHighPole());
             stateMachine.changeState(SLIDE, new SlidePosition(HIGH_POLE_POS));
             stateMachine.changeState(INTAKE, new ArmPosition(Configuration.ServoPosition.HOLD));
-            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (50.0) : (35.0)) : (allianceColor.equals(AllianceColor.RED) ? 130.0 : (-45.0)), 1));
+            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (50.0) : (-50.0)) : (allianceColor.equals(AllianceColor.RED) ? -50.0 : (50.0)), 1));
             CombinedTracker.trackType = TrackType.POLE;
         }
 
@@ -176,7 +174,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             if(!isDone && (stateMachine.getStateReferenceByType(SLIDE).isDone || timer.seconds() > 2.0)) {
                 isDone = true;
                 timer.reset();
-                stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 0.5, Configuration.CLAW_OPEN));
+                stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 0.45, Configuration.CLAW_OPEN));
             }
 
             if(timer.seconds() > 0.55 && isDone) {
@@ -200,9 +198,9 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             stateMachine.changeState(SLIDE, new SlidePosition(INTAKE_LOW_POS - (iteration * CONE_STACK_TICKS)));
             stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.23, Configuration.CLAW_OPEN));
             if(iteration > 1)
-                stateMachine.changeState(TURRET, new TurretAngle(lastTurretStackPos / Configuration.TURRET_TICKS_PER_DEGREE, iteration));
+                stateMachine.changeState(TURRET, new TurretAngle(lastTurretStackPos / Configuration.TURRET_TICKS_PER_DEGREE, 0.3, iteration));
             else
-                stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (180.0) : (-90.0)) : (allianceColor.equals(AllianceColor.RED) ? 0.0 : (90.0)), 0.3, iteration));
+                stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (180.0) : (-180.0)) : (allianceColor.equals(AllianceColor.RED) ? (-180.0) : (180.0)), 0.3, iteration));
             CombinedTracker.trackType = TrackType.CONE;
         }
 
@@ -263,7 +261,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
                 stateMachine.changeState(INTAKE, new ArmPositionVisionDelayedIntake(Configuration.ServoPosition.PLACE, 0.4, Configuration.CLAW_OPEN));
             }
 
-            if(timer.seconds() > 0.5 && isDone) {
+            if(timer.seconds() > 0.45 && isDone) {
                 if(iteration >= maxIterations) {
                     stateMachine.changeState(DRIVE, new HighPoleToPark());
                 } else
@@ -279,7 +277,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getAudienceHighPoleSleeveTrajectory(allianceColor, signal) : trajectoryRR.getFarHighPoleSleeveTrajectory(allianceColor, signal));
             stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.TELEOP_HOLD, 0, Configuration.CLAW_OPEN));
             stateMachine.changeState(SLIDE, new SlidePosition(Configuration.LOW_POS));
-            stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (90.0) : (0.0)) : ((allianceColor.equals(AllianceColor.RED)) ? 90.0 : 0.0), maxIterations));
+            stateMachine.changeState(TURRET, new TurretAngle(0.0, maxIterations));
         }
 
         @Override
