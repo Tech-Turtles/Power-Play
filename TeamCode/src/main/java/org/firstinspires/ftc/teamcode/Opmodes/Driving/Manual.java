@@ -187,7 +187,11 @@ public class Manual extends RobotHardware {
             if(secondary.BOnce()) {
                 CombinedTracker.trackType = CombinedTracker.trackType.equals(TrackType.CONE) ? TrackType.POLE : TrackType.CONE;
             }
-            telemetry.addData("Tracking:", CombinedTracker.trackType.name());
+            if(CombinedTracker.trackType.equals(TrackType.POLE))
+                telemetry.addLine(setFontColor("Yellow","█████████████████████████████████████████████████████████████████████"));
+            else
+                telemetry.addLine(setFontColor("Red","█████████████████████████████████████████████████████████████████████"));
+            telemetry.addData(setHeader(1, "Tracking:"), CombinedTracker.trackType.name());
 
             if(secondary.left_trigger > deadzone) {
                 if(visionDetection == null)

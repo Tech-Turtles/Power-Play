@@ -43,8 +43,9 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
     public static double armOffset = -0.053;
     private final int visionSwitchIterations = 4;
     public static int maxIterations = 6;
+    private static final double stackMaxAngle = 45.0;
 
-    private final double HIGH_POLE_POS = 850.0, INTAKE_LOW_POS = Configuration.MEDIUM_POS - 70.0, CONE_STACK_TICKS = 45.0;
+    private final double HIGH_POLE_POS = 850.0, INTAKE_LOW_POS = Configuration.MEDIUM_POS - 70.0 + 60, CONE_STACK_TICKS = 45.0;
 
     public RobotStateContext(AutoOpmode autoOpmode, AllianceColor allianceColor, StartPosition startPosition) {
         this.autoOpmode = autoOpmode;
@@ -178,7 +179,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             }
 
             if(timer.seconds() > 0.55 && isDone) {
-                stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.HOLD, 0.0, Configuration.CLAW_OPEN));
+                stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.TELEOP_HOLD, 0.0, Configuration.CLAW_OPEN));
                 stateMachine.changeState(DRIVE, new HighPoleToStack(1));
             }
         }
@@ -197,10 +198,11 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             opMode.mecanumDrive.followTrajectoryAsync(startPosition.equals(StartPosition.AUDIENCE) ? trajectoryRR.getTrajectoryAudienceHighPoleToStack() : trajectoryRR.getTrajectoryFarHighPoleToStack());
             stateMachine.changeState(SLIDE, new SlidePosition(INTAKE_LOW_POS - (iteration * CONE_STACK_TICKS)));
             stateMachine.changeState(INTAKE, new IntakeDelayedArmPosition(Configuration.ServoPosition.LOW_INTAKE, 0.23, Configuration.CLAW_OPEN));
+            double turretAngle = startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (180.0) : (-180.0)) : (allianceColor.equals(AllianceColor.RED) ? (-180.0) : (180.0));
             if(iteration > 1)
-                stateMachine.changeState(TURRET, new TurretAngle(lastTurretStackPos / Configuration.TURRET_TICKS_PER_DEGREE, 0.3, iteration));
+                stateMachine.changeState(TURRET, new TurretAngle(almostEqual(lastTurretStackPos / Configuration.TURRET_TICKS_PER_DEGREE, turretAngle, stackMaxAngle) ? lastTurretStackPos / Configuration.TURRET_TICKS_PER_DEGREE : turretAngle, 0.3, iteration));
             else
-                stateMachine.changeState(TURRET, new TurretAngle(startPosition.equals(StartPosition.AUDIENCE) ? (allianceColor.equals(AllianceColor.RED) ? (180.0) : (-180.0)) : (allianceColor.equals(AllianceColor.RED) ? (-180.0) : (180.0)), 0.3, iteration));
+                stateMachine.changeState(TURRET, new TurretAngle(turretAngle, 0.3, iteration));
             CombinedTracker.trackType = TrackType.CONE;
         }
 
@@ -224,6 +226,7 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             }
 
             if(isDone && timer.seconds() > 0.45) {
+                stateMachine.changeState(INTAKE, new ArmPositionDelayedIntake(Configuration.ServoPosition.TELEOP_HOLD, 0.0, Configuration.CLAW_OPEN));
                 stateMachine.changeState(DRIVE, new StackToHighPole(iteration + 1));
             }
         }
@@ -372,10 +375,6 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             }
 
             return ((((coneCenterR + coneCenterL)/2.0) - coneCenterL) + (((coneCenterR + coneCenterL)/2.0) - (320 - coneCenterR)));
-        }
-
-        private boolean almostEqual(double a, double b, double eps){
-            return Math.abs(a-b) < eps;
         }
 
 //        private double calculateTurn() {
@@ -592,5 +591,9 @@ public class RobotStateContext implements Executive.RobotStateMachineContextInte
             for (Motors motor : motors)
                 opMode.motorUtility.setPower(motor, 0);
         }
+    }
+
+    private boolean almostEqual(double a, double b, double eps){
+        return Math.abs(a-b) < eps;
     }
 }

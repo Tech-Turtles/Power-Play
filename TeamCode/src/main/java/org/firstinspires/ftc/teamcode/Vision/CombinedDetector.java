@@ -55,8 +55,8 @@ public class CombinedDetector {
             }
         });
 
-//        if(dashboard)
-//            FtcDashboard.getInstance().startCameraStream(camera[0], 30);
+        if(dashboard)
+            FtcDashboard.getInstance().startCameraStream(camera[0], 30);
 
         if(camera.length == 1)
             return;

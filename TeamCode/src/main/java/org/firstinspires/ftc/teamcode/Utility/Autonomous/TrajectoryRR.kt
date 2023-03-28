@@ -92,7 +92,7 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
 
                 this.trajectoryAudienceHighPoleToSignalParkFar =
                     trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
-                        .lineToConstantHeading(Vector2d(-59.0,13.0))
+                        .lineToConstantHeading(Vector2d(-11.5,13.0))
                         .build()
 
                 this.trajectoryAudienceHighPoleToSignalParkMiddle =
@@ -102,7 +102,7 @@ class TrajectoryRR constructor(sampleMecanumDrive: SampleMecanumDrive){
 
                 this.trajectoryAudienceHighPoleToSignalParkAudience =
                     trajectoryBuilder(audienceStackToHighPole.end(), 90.0.toRadians)
-                        .lineToConstantHeading(Vector2d(-11.5,13.0))
+                        .lineToConstantHeading(Vector2d(-59.0,13.0))
                         .build()
 
 //                this.trajectoryAudienceHighPoleToSignalParkAudience =

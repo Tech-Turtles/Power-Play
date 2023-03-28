@@ -32,10 +32,10 @@ public class Configuration {
     public static int DEFAULT_PARK_ORDINAL = 1;
 
     public enum ServoPosition {
-        START(0.85, 0.85),
+        START(0.9, 0.9),
         HOLD(0.8, 0.8),
         TELEOP_HOLD(0.95, 0.95),
-        OTHER(0.83, 0.83),
+        OTHER(0.89, 0.89),
         PLACE(0.6, 0.6),
         INTAKE(0.35, 0.35),
         INTERMEDIARY(0.3, 0.3),
