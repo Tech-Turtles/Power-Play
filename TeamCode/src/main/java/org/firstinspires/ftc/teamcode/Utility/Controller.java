@@ -8,6 +8,9 @@ https://github.com/cporter/
  */
 
 public class Controller {
+
+    private final double deadzone = 0.15;
+
     private final Gamepad gamepad;
 
     private int dpad_up, dpad_down, dpad_left, dpad_right;
@@ -15,7 +18,6 @@ public class Controller {
     private int left_bumper, right_bumper;
     private int right_stick_button, left_stick_button;
     private int left_triggerAcc, right_triggerAcc;
-    private final double deadzone = 0.15;
 
     public double left_stick_x, right_stick_x, left_stick_y, right_stick_y;
     public double left_trigger, right_trigger;

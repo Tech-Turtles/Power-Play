@@ -106,9 +106,9 @@ public class AutoOpmode extends RobotHardware {
 
         telemetry.addData("Tag", tagOfInterest == null ? "NONE" : tagOfInterest.id);
 
-        servoUtility.setAngle(Servos.LEFT_ARM, Configuration.ServoPosition.START.getLeft());
-        servoUtility.setAngle(Servos.RIGHT_ARM, Configuration.ServoPosition.START.getRight());
-        servoUtility.setAngle(Servos.CLAW, Configuration.CLAW_CLOSED);
+//        servoUtility.setAngle(Servos.LEFT_ARM, Configuration.ServoPosition.START.getLeft());
+//        servoUtility.setAngle(Servos.RIGHT_ARM, Configuration.ServoPosition.START.getRight());
+//        servoUtility.setAngle(Servos.CLAW, Configuration.CLAW_CLOSED);
 
         telemetry.update();
     }

@@ -4,9 +4,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 public enum Servos {
 
-    LEFT_ARM("arm left", Servo.Direction.FORWARD, ServoTypes.LINKED),
-    RIGHT_ARM("arm right", Servo.Direction.REVERSE, ServoTypes.LINKED),
-    CLAW("claw", Servo.Direction.FORWARD, ServoTypes.INDEPENDENT);
+    ;
 
     private final String configName;
     private final Servo.Direction direction;

@@ -7,10 +7,13 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.outoftheboxrobotics.photoncore.PhotonCore;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.BNO055IMUImpl;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.CRServoImplEx;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
@@ -21,20 +24,30 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.HardwareTypes.ColorSensor;
 import org.firstinspires.ftc.teamcode.HardwareTypes.ContinuousServo;
 import org.firstinspires.ftc.teamcode.HardwareTypes.ExpansionHubs;
+import org.firstinspires.ftc.teamcode.HardwareTypes.IMU;
 import org.firstinspires.ftc.teamcode.HardwareTypes.MotorTypes;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
 import org.firstinspires.ftc.teamcode.HardwareTypes.RevDistanceSensor;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.HardwareTypes.Webcam;
 import org.firstinspires.ftc.teamcode.Utility.Math.ElapsedTimer;
-import org.firstinspires.ftc.teamcode.Utility.Mecanum.AutoDrive;
-import org.firstinspires.ftc.teamcode.Utility.Mecanum.Mecanum;
+import org.firstinspires.ftc.teamcode.Utility.Math.geometry.Translation2d;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Utility.Roadrunner.util.AxesSigns;
+import org.firstinspires.ftc.teamcode.Utility.Roadrunner.util.BNO055IMUUtil;
+import org.firstinspires.ftc.teamcode.Utility.Swerve.hardware.SwerveAbsoluteEncoder;
+import org.firstinspires.ftc.teamcode.Utility.Swerve.SwerveDrive;
+import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.PIDFConfig;
+import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.SwerveControllerConfiguration;
+import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.SwerveDriveConfiguration;
+import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.SwerveModuleConfiguration;
+import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.SwerveModulePhysicalCharacteristics;
 import org.firstinspires.ftc.teamcode.Vision.CombinedDetector;
 
 import java.text.DecimalFormat;
@@ -48,7 +61,7 @@ public class RobotHardware extends OpMode {
     // Hashmaps to store the hardware object with the key being the enum values.
     private final HashMap<Motors, DcMotorEx> motors = new HashMap<>();
     private final HashMap<Servos, ServoImplEx> servos = new HashMap<>();
-    private final HashMap<ContinuousServo, CRServo> crServos = new HashMap<>();
+    private final HashMap<ContinuousServo, CRServoImplEx> crServos = new HashMap<>();
     private final HashMap<ColorSensor, RevColorSensorV3> colorSensors = new HashMap<>();
     private final HashMap<RevDistanceSensor, DistanceSensor> distanceSensors = new HashMap<>();
     // Utility objects to access hardware methods.
@@ -63,6 +76,12 @@ public class RobotHardware extends OpMode {
     public final ElapsedTimer period = new ElapsedTimer();
     // Controller objects that act as a more intuitive wrapper for the FTC gamepad class.
     public Controller primary, secondary;
+
+    private SwerveDrive drive;
+
+    private BNO055IMUImpl imu;
+
+    public static double totalTime = 0.0;
 
     public CombinedDetector visionDetection;
     public SampleMecanumDrive mecanumDrive;
@@ -208,63 +227,31 @@ public class RobotHardware extends OpMode {
             setPower(Motors.BACK_RIGHT, right);
         }
 
-        /**
-         * Apply motor power matching the wheels object.
-         *
-         * @param wheels Provides all four mecanum wheel powers, [-1, 1].
-         */
-        public void setDriveForMecanumWheels(Mecanum.Wheels wheels) {
-            setPower(Motors.FRONT_LEFT, wheels.frontLeft);
-            setPower(Motors.BACK_LEFT, wheels.backLeft);
-            setPower(Motors.FRONT_RIGHT, wheels.frontRight);
-            setPower(Motors.BACK_RIGHT, wheels.backRight);
-        }
-
-        public void setDriveForMecanumCommand(Mecanum.Command command) {
-            Mecanum.Wheels wheels = Mecanum.commandToWheels(command);
-            setDriveForMecanumWheels(wheels);
-        }
-
-        /**
-         * Sets mecanum drive chain power using simplistic calculations.
-         *
-         * @param leftStickX  Unmodified Gamepad leftStickX inputs.
-         * @param leftStickY  Unmodified Gamepad leftStickY inputs.
-         * @param rightStickX Unmodified Gamepad rightStickX inputs.
-         * @param rightStickY Unmodified Gamepad rightStickY inputs.
-         */
-        public void setDriveForSimpleMecanum(double leftStickX, double leftStickY,
-                                             double rightStickX, double rightStickY) {
-            Mecanum.Wheels wheels = Mecanum.simpleJoystickToWheels(leftStickX, leftStickY, rightStickX, rightStickY);
-            setDriveForMecanumWheels(wheels);
-        }
-
-
-        /**
-         * @param motor The motor that will be driven
-         * @param targetTicks The position where the motor will be driven. Must be in encoder Ticks
-         * @param power The power at which the robot will be driven
-         * @param rampThreshold The position when the robot will start slowing the motor down before its destination
-         * @return Returns whether or not the motor arrived to the specified position
-         */
-        public boolean goToPosition(Motors motor, int targetTicks, double power, double rampThreshold) {
-            power = Range.clip(Math.abs(power), 0, 1);
-            int poweredDistance = 0;
-            int arrivedDistance = 50;
-            double maxRampPower = 1.0;
-            double minRampPower = 0.0;
-            int errorSignal = getEncoderValue(motor) - targetTicks;
-            double direction = errorSignal > 0 ? -1.0 : 1.0;
-            double rampDownRatio = AutoDrive.rampDown(Math.abs(errorSignal), rampThreshold, maxRampPower, minRampPower);
-
-            if (Math.abs(errorSignal) >= poweredDistance) {
-                setPower(motor, direction * power * rampDownRatio);
-            } else {
-                setPower(motor, 0);
-            }
-
-            return Math.abs(errorSignal) <= arrivedDistance;
-        }
+//        /**
+//         * @param motor The motor that will be driven
+//         * @param targetTicks The position where the motor will be driven. Must be in encoder Ticks
+//         * @param power The power at which the robot will be driven
+//         * @param rampThreshold The position when the robot will start slowing the motor down before its destination
+//         * @return Returns whether or not the motor arrived to the specified position
+//         */
+//        public boolean goToPosition(Motors motor, int targetTicks, double power, double rampThreshold) {
+//            power = Range.clip(Math.abs(power), 0, 1);
+//            int poweredDistance = 0;
+//            int arrivedDistance = 50;
+//            double maxRampPower = 1.0;
+//            double minRampPower = 0.0;
+//            int errorSignal = getEncoderValue(motor) - targetTicks;
+//            double direction = errorSignal > 0 ? -1.0 : 1.0;
+//            double rampDownRatio = AutoDrive.rampDown(Math.abs(errorSignal), rampThreshold, maxRampPower, minRampPower);
+//
+//            if (Math.abs(errorSignal) >= poweredDistance) {
+//                setPower(motor, direction * power * rampDownRatio);
+//            } else {
+//                setPower(motor, 0);
+//            }
+//
+//            return Math.abs(errorSignal) <= arrivedDistance;
+//        }
 
         //ToDo Prevent PID Controller from possibly being null
         public PIDFController getController(Motors motor) {
@@ -276,21 +263,21 @@ public class RobotHardware extends OpMode {
             return controller;
         }
 
-        /**
-         * @param motor The motor that will be driven
-         * @param targetTicks The position where the motor will be driven. Must be in encoder Ticks
-         * @param power The power at which the robot will be driven
-         * @return Returns whether or not the motor arrived to the specified position
-         */
-        public boolean goToPosition(Motors motor, int targetTicks, double power) {
-            int rampDistanceTicks = 400;
-            return goToPosition(motor, targetTicks, power, rampDistanceTicks);
-        }
+//        /**
+//         * @param motor The motor that will be driven
+//         * @param targetTicks The position where the motor will be driven. Must be in encoder Ticks
+//         * @param power The power at which the robot will be driven
+//         * @return Returns whether or not the motor arrived to the specified position
+//         */
+//        public boolean goToPosition(Motors motor, int targetTicks, double power) {
+//            int rampDistanceTicks = 400;
+//            return goToPosition(motor, targetTicks, power, rampDistanceTicks);
+//        }
     }
 
     public class ServoUtility {
         ServoImplEx s;
-        CRServo cr;
+        CRServoImplEx cr;
 
         private ServoImplEx getServo(Servos servo) {
             s = servos.get(servo);
@@ -299,7 +286,7 @@ public class RobotHardware extends OpMode {
             return s;
         }
 
-        private CRServo getContinuousServo(ContinuousServo servo) {
+        private CRServoImplEx getContinuousServo(ContinuousServo servo) {
             cr = crServos.get(servo);
             if (cr == null && packet != null)
                 packet.addLine("CRServo Missing: " + servo.name());
@@ -360,6 +347,22 @@ public class RobotHardware extends OpMode {
             if(s == null) return;
             s.scaleRange(min, max);
         }
+    }
+
+    public BNO055IMUImpl getIMUInstance() {
+        if(imu == null) {
+            imu = hardwareMap.get(BNO055IMUImpl.class, IMU.IMU1.getName());
+            if(imu != null) {
+                BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+                parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+                imu.initialize(parameters);
+
+                // If your hub is mounted vertically, remap the IMU axes so that the z-axis points
+                // upward (normal to the floor) using a command like the following:
+                BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
+            }
+        }
+        return imu;
     }
 
     public RevColorSensorV3 getColorSensor(ColorSensor colorSensor) {
@@ -423,8 +426,12 @@ public class RobotHardware extends OpMode {
         return "<h"+headerNumber+">"+text+"</h"+headerNumber+">";
     }
 
+    SwerveControllerConfiguration swerveControllerConfiguration;
+    SwerveAbsoluteEncoder leftFront;
     @Override
     public void init() {
+        totalTime = getTime();
+
         dashboard = FtcDashboard.getInstance();
         dashboard.setTelemetryTransmissionInterval(25);
 
@@ -464,7 +471,7 @@ public class RobotHardware extends OpMode {
 
         for (ContinuousServo c : ContinuousServo.values()) {
             try {
-                CRServo crServo = hardwareMap.get(CRServo.class, c.getConfigName());
+                CRServoImplEx crServo = hardwareMap.get(CRServoImplEx.class, c.getConfigName());
                 crServos.put(c, crServo);
                 crServo.setDirection(c.getDirection());
             } catch (IllegalArgumentException ignore) {}
@@ -485,6 +492,30 @@ public class RobotHardware extends OpMode {
             } catch (IllegalArgumentException ignore) {}
         }
 
+        SwerveModulePhysicalCharacteristics physicalCharacteristics = new SwerveModulePhysicalCharacteristics(
+                8.181818, 1, 0.072, 1.1,
+                12.0, 20, 20, 0.25,
+                0.25, 1, 1, 0.0
+        );
+        leftFront = new SwerveAbsoluteEncoder(hardwareMap.get(AnalogInput.class, "leftFrontEncoder"));
+        SwerveModuleConfiguration front_left = new SwerveModuleConfiguration(motorUtility.getMotorReference(Motors.FRONT_LEFT),
+                servoUtility.getContinuousServo(ContinuousServo.FRONT_LEFT), leftFront,
+                -18.0, 0.1778, 0.1778, new PIDFConfig(0.08,0.0),
+                new PIDFConfig(0.08, 0.0), 2.0, physicalCharacteristics, "FrontLeft"
+        );
+
+        SwerveModuleConfiguration front_right = new SwerveModuleConfiguration(motorUtility.getMotorReference(Motors.FRONT_RIGHT),
+                servoUtility.getContinuousServo(ContinuousServo.FRONT_RIGHT), new SwerveAbsoluteEncoder(hardwareMap.get(AnalogInput.class, "rightFrontEncoder")),
+                0.0, -0.1778, 0.1778, new PIDFConfig(0.08,0.0),
+                new PIDFConfig(0.08, 0.0), 2.0, physicalCharacteristics, "FrontRight"
+        );
+
+        SwerveDriveConfiguration swerveDriveConfiguration = new SwerveDriveConfiguration(
+                new SwerveModuleConfiguration[]{front_left, front_right}, IMU.IMU1, 0.6, false);
+
+        swerveControllerConfiguration = new SwerveControllerConfiguration(swerveDriveConfiguration, new PIDFConfig(0.08, 0.0));
+        drive = new SwerveDrive(swerveDriveConfiguration, swerveControllerConfiguration, this);
+
         PhotonCore.enable();
 
         primary = new Controller(gamepad1);
@@ -497,6 +528,7 @@ public class RobotHardware extends OpMode {
 
     @Override
     public void init_loop() {
+        totalTime = getTime();
         if(packet != null) {
             dashboard.sendTelemetryPacket(packet);
             packet = new TelemetryPacket();
@@ -520,6 +552,7 @@ public class RobotHardware extends OpMode {
 
     @Override
     public void loop() {
+        totalTime = getTime();
         if(packet != null) {
             dashboard.sendTelemetryPacket(packet);
 //            packet = new TelemetryPacket();
@@ -530,6 +563,26 @@ public class RobotHardware extends OpMode {
 
         primary.update();
         secondary.update();
+
+        packet.put("Period Average: ", df_precise.format(period.getAveragePeriodSec()) + "s");
+        packet.put("Absolute Encoder", leftFront.getCurrentPosition());
+
+//        if(primary.X()) {
+//            servoUtility.setPower(ContinuousServo.FRONT_LEFT, 1.0);
+//        } else if(primary.Y()) {
+//            servoUtility.setPower(ContinuousServo.FRONT_LEFT, -1.0);
+//        } else {
+//            servoUtility.setPower(ContinuousServo.FRONT_LEFT, 0.0);
+//        }
+
+        double xVelocity   = Math.pow(-primary.left_stick_y, 3);
+        double yVelocity   = Math.pow(primary.left_stick_x, 3);
+        double angVelocity = Math.pow(primary.right_stick_x, 3);
+
+        drive.drive(new Translation2d(xVelocity * swerveControllerConfiguration.maxSpeed,
+                        yVelocity * swerveControllerConfiguration.maxSpeed),
+                angVelocity * swerveControllerConfiguration.maxAngularVelocity,
+                false, true, false);
     }
     
     /**

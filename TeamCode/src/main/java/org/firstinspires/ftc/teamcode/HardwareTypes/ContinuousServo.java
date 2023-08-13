@@ -4,7 +4,11 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 public enum ContinuousServo {
 
-    ;
+    FRONT_LEFT("front left angle", DcMotorSimple.Direction.FORWARD, ServoTypes.INDEPENDENT),
+    BACK_LEFT("back left angle", DcMotorSimple.Direction.FORWARD, ServoTypes.INDEPENDENT),
+    BACK_RIGHT("back right angle", DcMotorSimple.Direction.REVERSE, ServoTypes.INDEPENDENT),
+    FRONT_RIGHT("front right angle", DcMotorSimple.Direction.REVERSE, ServoTypes.INDEPENDENT);
+
 
     private final String configName;
     private final DcMotorSimple.Direction direction;
