@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.Utility.Math.geometry;
 
-import java.util.Objects;
-
 import org.ejml.data.DMatrixRMaj;
 import org.ejml.dense.row.factory.DecompositionFactory_DDRM;
 import org.ejml.interfaces.decomposition.QRDecomposition;
@@ -14,6 +12,8 @@ import org.firstinspires.ftc.teamcode.Utility.Math.Vector;
 import org.firstinspires.ftc.teamcode.Utility.Math.interpolation.Interpolatable;
 import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N1;
 import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N3;
+
+import java.util.Objects;
 
 /** A rotation in a 3D coordinate frame represented by a quaternion. */
 public class Rotation3d implements Interpolatable<Rotation3d> {

@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.Utility.Swerve.hardware;
 
-import com.acmerobotics.roadrunner.util.Angle;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 
 public class SwerveAbsoluteEncoder {

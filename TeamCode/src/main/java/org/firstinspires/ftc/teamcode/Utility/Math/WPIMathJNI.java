@@ -1,11 +1,5 @@
 package org.firstinspires.ftc.teamcode.Utility.Math;
 
-import org.ejml.data.DMatrixRMaj;
-import org.ejml.dense.row.CommonOps_DDRM;
-import org.ejml.simple.SimpleMatrix;
-
-import java.io.IOException;
-
 public final class WPIMathJNI {
 
     /**

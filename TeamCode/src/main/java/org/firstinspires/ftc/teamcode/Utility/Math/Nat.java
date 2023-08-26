@@ -1,6 +1,15 @@
 package org.firstinspires.ftc.teamcode.Utility.Math;
 
-import org.firstinspires.ftc.teamcode.Utility.Math.numbers.*;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N1;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N10;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N2;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N3;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N4;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N5;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N6;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N7;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N8;
+import org.firstinspires.ftc.teamcode.Utility.Math.numbers.N9;
 
 public interface Nat<T extends Num> {
     /**

@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.Utility.Swerve.hardware;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.BNO055IMUImpl;
 
 import org.firstinspires.ftc.teamcode.Utility.Math.geometry.Rotation3d;

@@ -1,7 +1,8 @@
 package org.firstinspires.ftc.teamcode.Utility.Swerve.configuration;
 
-import org.firstinspires.ftc.teamcode.Utility.Swerve.SwerveController;
 import static org.firstinspires.ftc.teamcode.Utility.Swerve.SwerveMath.calculateMaxAngularVelocity;
+
+import org.firstinspires.ftc.teamcode.Utility.Swerve.SwerveController;
 
 /**
  * Swerve Controller configuration class which is used to configure {@link SwerveController}.

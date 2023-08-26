@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.Opmodes.Driving;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 
 @Config

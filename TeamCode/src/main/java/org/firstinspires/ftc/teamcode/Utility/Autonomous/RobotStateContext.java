@@ -1,30 +1,9 @@
 package org.firstinspires.ftc.teamcode.Utility.Autonomous;
 
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.DRIVE;
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.INTAKE;
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.SLIDE;
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.TURRET;
-import static org.firstinspires.ftc.teamcode.Utility.RobotHardware.df;
-
 import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.roadrunner.control.PIDCoefficients;
-import com.acmerobotics.roadrunner.control.PIDFController;
-import com.acmerobotics.roadrunner.geometry.Pose2d;
-import com.acmerobotics.roadrunner.profile.MotionProfile;
-import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
-import com.acmerobotics.roadrunner.profile.MotionState;
-import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.HardwareTypes.Motors;
-import org.firstinspires.ftc.teamcode.HardwareTypes.RevDistanceSensor;
-import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
-import org.firstinspires.ftc.teamcode.Opmodes.Driving.Manual;
 import org.firstinspires.ftc.teamcode.Utility.Configuration;
-import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
-import org.firstinspires.ftc.teamcode.Vision.CombinedTracker;
-import org.firstinspires.ftc.teamcode.Vision.TrackType;
-import org.opencv.core.Rect;
 
 @Config
 public class RobotStateContext implements Executive.RobotStateMachineContextInterface {

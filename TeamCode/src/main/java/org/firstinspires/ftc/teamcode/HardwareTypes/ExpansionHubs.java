@@ -5,7 +5,7 @@ public enum ExpansionHubs {
     HUB1("Expansion Hub 173"),
     HUB2("Expansion Hub 2");
 
-    String name;
+    private final String name;
 
     ExpansionHubs(String name) {
         this.name = name;

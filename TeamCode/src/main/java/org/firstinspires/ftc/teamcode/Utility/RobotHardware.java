@@ -41,21 +41,29 @@ import org.firstinspires.ftc.teamcode.Utility.Math.geometry.Translation2d;
 import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.Utility.Roadrunner.util.AxesSigns;
 import org.firstinspires.ftc.teamcode.Utility.Roadrunner.util.BNO055IMUUtil;
-import org.firstinspires.ftc.teamcode.Utility.Swerve.hardware.SwerveAbsoluteEncoder;
 import org.firstinspires.ftc.teamcode.Utility.Swerve.SwerveDrive;
 import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.PIDFConfig;
 import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.SwerveControllerConfiguration;
 import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.SwerveDriveConfiguration;
 import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.SwerveModuleConfiguration;
 import org.firstinspires.ftc.teamcode.Utility.Swerve.configuration.SwerveModulePhysicalCharacteristics;
+import org.firstinspires.ftc.teamcode.Utility.Swerve.hardware.SwerveAbsoluteEncoder;
 import org.firstinspires.ftc.teamcode.Vision.CombinedDetector;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
 
 /**
- * @author Christian, Ashley
+ * @author Christian E, Ashley T
  * Revamped RobotHardware, better readability, new methods, more organized, easier to build upon.
+ * <p>
+ * A class made to act as a foundation for all other OpModes, responsible for retrieving hardware
+ * based on the configuration-names registered within the enums in the HardwareTypes package.
+ * Contains wrapper functions to prevent errors when a device is not detected.
+ * Handles LynxModule cache clearing.
+ * Handles gamepad updates.
+ * Handles Dashboard initialization & sending telemetry packet.
+ * Stops all continuous motion devices on {@link #stop()}.
  */
 public class RobotHardware extends OpMode {
     // Hashmaps to store the hardware object with the key being the enum values.
@@ -510,8 +518,20 @@ public class RobotHardware extends OpMode {
                 new PIDFConfig(0.08, 0.0), 2.0, physicalCharacteristics, "FrontRight"
         );
 
+        SwerveModuleConfiguration back_left = new SwerveModuleConfiguration(motorUtility.getMotorReference(Motors.BACK_LEFT),
+                servoUtility.getContinuousServo(ContinuousServo.BACK_LEFT), new SwerveAbsoluteEncoder(hardwareMap.get(AnalogInput.class, "leftBackEncoder")),
+                0.0, 0.1778, -0.1778, new PIDFConfig(0.08,0.0),
+                new PIDFConfig(0.08, 0.0), 2.0, physicalCharacteristics, "BackLeft"
+        );
+
+        SwerveModuleConfiguration back_right = new SwerveModuleConfiguration(motorUtility.getMotorReference(Motors.BACK_RIGHT),
+                servoUtility.getContinuousServo(ContinuousServo.BACK_RIGHT), new SwerveAbsoluteEncoder(hardwareMap.get(AnalogInput.class, "rightBackEncoder")),
+                0.0, -0.1778, -0.1778, new PIDFConfig(0.08,0.0),
+                new PIDFConfig(0.08, 0.0), 2.0, physicalCharacteristics, "BackRight"
+        );
+
         SwerveDriveConfiguration swerveDriveConfiguration = new SwerveDriveConfiguration(
-                new SwerveModuleConfiguration[]{front_left, front_right}, IMU.IMU1, 0.6, false);
+                new SwerveModuleConfiguration[]{front_left, back_left, back_right, front_right}, IMU.IMU1, 2.0, false);
 
         swerveControllerConfiguration = new SwerveControllerConfiguration(swerveDriveConfiguration, new PIDFConfig(0.08, 0.0));
         drive = new SwerveDrive(swerveDriveConfiguration, swerveControllerConfiguration, this);
@@ -575,9 +595,9 @@ public class RobotHardware extends OpMode {
 //            servoUtility.setPower(ContinuousServo.FRONT_LEFT, 0.0);
 //        }
 
-        double xVelocity   = Math.pow(-primary.left_stick_y, 3);
-        double yVelocity   = Math.pow(primary.left_stick_x, 3);
-        double angVelocity = Math.pow(primary.right_stick_x, 3);
+        double xVelocity   = -primary.left_stick_y;
+        double yVelocity   = primary.left_stick_x;
+        double angVelocity = primary.right_stick_x;
 
         drive.drive(new Translation2d(xVelocity * swerveControllerConfiguration.maxSpeed,
                         yVelocity * swerveControllerConfiguration.maxSpeed),

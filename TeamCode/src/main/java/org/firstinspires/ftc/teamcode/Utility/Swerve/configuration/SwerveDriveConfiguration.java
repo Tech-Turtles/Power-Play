@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.Utility.Swerve.configuration;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
-
 import org.firstinspires.ftc.teamcode.HardwareTypes.IMU;
 import org.firstinspires.ftc.teamcode.Utility.Math.geometry.Translation2d;
 import org.firstinspires.ftc.teamcode.Utility.Swerve.SwerveModule;

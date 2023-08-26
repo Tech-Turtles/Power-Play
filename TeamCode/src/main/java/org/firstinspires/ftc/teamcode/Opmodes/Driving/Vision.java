@@ -2,14 +2,9 @@ package org.firstinspires.ftc.teamcode.Opmodes.Driving;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.HardwareTypes.Servos;
 import org.firstinspires.ftc.teamcode.Utility.Configuration;
-import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
-import org.firstinspires.ftc.teamcode.Vision.CombinedDetector;
 import org.firstinspires.ftc.teamcode.Vision.CombinedTracker;
-import org.firstinspires.ftc.teamcode.Vision.TrackType;
 
 @TeleOp(name="Vision", group="B")
 @Config

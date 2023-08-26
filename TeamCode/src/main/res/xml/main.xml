@@ -8,13 +8,13 @@
             <ContinuousRotationServo    name="front left angle"   port="0" />
             <AnalogInput                name="leftFrontEncoder"   port="2" />
 
-<!--            <goBILDA5202SeriesMotor     name="back left"        port="1" />-->
-<!--            <ContinuousRotationServo    name="back left angle"   port="1" />-->
-<!--            <AnalogInput                name="leftBackEncoder"   port="1" />-->
+            <goBILDA5202SeriesMotor     name="back left"        port="1" />
+            <ContinuousRotationServo    name="back left angle"   port="1" />
+            <AnalogInput                name="leftBackEncoder"   port="1" />
 
-<!--            <goBILDA5202SeriesMotor     name="back right"           port="2" />-->
-<!--            <ContinuousRotationServo    name="back right angle"   port="2" />-->
-<!--            <AnalogInput                name="rightBackEncoder"   port="3" />-->
+            <goBILDA5202SeriesMotor     name="back right"           port="2" />
+            <ContinuousRotationServo    name="back right angle"   port="2" />
+            <AnalogInput                name="rightBackEncoder"   port="3" />
 
             <goBILDA5202SeriesMotor     name="front right"      port="3" />
             <ContinuousRotationServo    name="front right angle"   port="3" />

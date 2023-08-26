@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.Opmodes.Driving;
 
-import static org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive.StateMachine.StateType.DRIVE;
 import static org.firstinspires.ftc.teamcode.Utility.Configuration.precisionPercentage;
 
 import com.acmerobotics.dashboard.config.Config;
@@ -12,7 +11,6 @@ import org.firstinspires.ftc.teamcode.Opmodes.Autonomous.AutoOpmode;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.AllianceColor;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.Executive;
 import org.firstinspires.ftc.teamcode.Utility.Autonomous.StartPosition;
-import org.firstinspires.ftc.teamcode.Utility.Odometry.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.Utility.RobotHardware;
 
 
